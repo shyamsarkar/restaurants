@@ -1,19 +1,34 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Notifications, Settings, Logout } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useCommonStore } from '@/stores/common.store';
-import { logoutUser } from '@/services/api.service';
+import { logoutUser, getRestaurantInfo } from '@/services/api.service';
 import { useAuthStore } from '@/stores/auth.store';
 
 interface ProfileDropdownProps {
   onClose: () => void;
 }
 
-
 const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => {
   const showSidebar = useCommonStore((state) => state.showSidebar);
-  const clearAuth = useAuthStore((state) => state.clearAuth)
-  const navigate = useNavigate()
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+  const user = useAuthStore((state) => state.user);
+  const navigate = useNavigate();
+  const [restaurantName, setRestaurantName] = useState<string>('Loading...');
+
+  useEffect(() => {
+    const fetchInfo = async () => {
+      try {
+        const info = await getRestaurantInfo();
+        setRestaurantName(info.name);
+      } catch (err) {
+        console.error('Failed to load restaurant info:', err);
+        setRestaurantName('Restaurant POS');
+      }
+    };
+    fetchInfo();
+  }, []);
+
   const handleLogout = async () => {
     try {
       await logoutUser();
@@ -23,16 +38,17 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => {
     }
     finally {
       clearAuth();
-      window.location.href = '/login'
+      window.location.href = '/login';
     }
-  }
+  };
+
   const gotoSettings = () => {
     navigate('restaurants/settings');
-  }
+  };
 
   const gotoNotification = () => {
     navigate('restaurants/notification');
-  }
+  };
 
   const menuItems = [
     { icon: Notifications, label: 'Notifications', onClick: gotoNotification, badge: '3' },
@@ -52,8 +68,8 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => {
       <div className={`absolute bottom-full mb-2 ${showSidebar ? 'left-0' : 'left-full ml-2'} w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50`}>
         {/* Profile Header */}
         <div className="flex flex-col items-center px-1 py-3 border-b border-gray-100">
-          <span className="text-lg font-medium text-gray-900 ml-1">Tenant Name</span>
-          <span className="text-xs text-gray-500 mt-1">shyamsarkar@github.com</span>
+          <span className="text-lg font-medium text-gray-900 ml-1">{restaurantName}</span>
+          <span className="text-xs text-gray-500 mt-1">{user?.email || 'user@example.com'}</span>
         </div>
 
         {/* Menu Items */}

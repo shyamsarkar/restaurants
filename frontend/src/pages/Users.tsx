@@ -8,7 +8,7 @@ import {
   User,
 } from "@/services/api.service";
 
-type UserRole = "admin" | "manager" | "cashier" | "waiter";
+type UserRole = "owner" | "admin" | "manager" | "cashier" | "waiter";
 
 const initialForm = {
   first_name: "",
@@ -21,6 +21,7 @@ const initialForm = {
 };
 
 const roleLabelMap: Record<UserRole, string> = {
+  owner: "Owner",
   admin: "Administrator",
   manager: "Manager",
   cashier: "Cashier",
@@ -196,6 +197,7 @@ const Users: React.FC = () => {
               }
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
+              <option value="owner">Owner</option>
               <option value="admin">Administrator</option>
               <option value="manager">Manager</option>
               <option value="cashier">Cashier</option>
@@ -274,6 +276,7 @@ const Users: React.FC = () => {
             className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="all">All Roles</option>
+            <option value="owner">Owner</option>
             <option value="admin">Administrator</option>
             <option value="manager">Manager</option>
             <option value="cashier">Cashier</option>

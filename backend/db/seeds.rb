@@ -1,22 +1,26 @@
 # frozen_string_literal: true
 
 # Clear Existing Data
-if Rails.env.development?
-  puts 'Cleaning database...'
-  OrderItem.destroy_all
-  Order.destroy_all
-  DiningTable.destroy_all
-  Item.destroy_all
-  Menu.destroy_all
-  Membership.destroy_all
-  Tenant.destroy_all
-  User.destroy_all
-
-  puts 'Database cleaned!'
-end
+puts 'Cleaning database...'
+OrderItemCancellation.delete_all
+KotItem.delete_all
+OrderItem.delete_all
+Kot.delete_all
+Order.delete_all
+Inventory.delete_all
+PurchaseHistory.delete_all
+Product.delete_all
+Category.delete_all
+Customer.delete_all
+RestaurantInfo.delete_all
+DiningTable.delete_all
+Membership.delete_all
+Tenant.delete_all
+User.delete_all
+AuditLog.delete_all
+puts 'Database cleaned!'
 
 puts 'Creating users...'
-
 # Create admin user
 admin = User.create!(
   email: 'admin@example.com',
@@ -27,9 +31,19 @@ admin = User.create!(
   is_active: true
 )
 
+# Create owner user
+owner = User.create!(
+  email: 'owner@example.com',
+  password: 'password123',
+  password_confirmation: 'password123',
+  first_name: 'Owner',
+  last_name: 'User',
+  is_active: true
+)
+
 # Create regular users
 users = []
-5.times do |i|
+3.times do |i|
   users << User.create!(
     email: "user#{i + 1}@example.com",
     password: 'password123',
@@ -39,356 +53,109 @@ users = []
     is_active: true
   )
 end
-
 puts "Created #{User.count} users"
 
 puts 'Creating tenants...'
-
-# Create tenants
-tenant1 = Tenant.create!(
-  name: 'Spice Garden Restaurant',
-  status: :active
-)
-
-tenant2 = Tenant.create!(
-  name: 'Urban Eats Cafe',
-  status: :active
-)
-
-Tenant.create!(
-  name: 'Coastal Bistro',
-  status: :pending
-)
-
+tenant1 = Tenant.create!(name: 'Spice Garden Restaurant', status: :active)
+tenant2 = Tenant.create!(name: 'Urban Eats Cafe', status: :active)
 puts "Created #{Tenant.count} tenants"
 
-puts 'Creating dining tables...'
-
-# Tables for tenant1
-t1_table1 = DiningTable.create!(
-  tenant: tenant1,
-  name: 'T1',
-  status: :available
-)
-
-t1_table2 = DiningTable.create!(
-  tenant: tenant1,
-  name: 'T2',
-  status: :occupied
-)
-
-t1_table3 = DiningTable.create!(
-  tenant: tenant1,
-  name: 'T3',
-  status: :reserved
-)
-
-# Tables for tenant2
-t2_table1 = DiningTable.create!(
-  tenant: tenant2,
-  name: 'A1',
-  status: :available
-)
-
-t2_table2 = DiningTable.create!(
-  tenant: tenant2,
-  name: 'A2',
-  status: :cleaning
-)
-
-puts "Created #{DiningTable.count} dining tables"
-
 puts 'Creating memberships...'
+# Owner memberships
+Membership.create!(user: owner, tenant: tenant1, role: :owner)
+Membership.create!(user: owner, tenant: tenant2, role: :owner)
 
-# Create memberships for tenant1
+# Admin & staff memberships
 Membership.create!(user: admin, tenant: tenant1, role: :admin)
 Membership.create!(user: users[0], tenant: tenant1, role: :manager)
-Membership.create!(user: users[1], tenant: tenant1, role: :waiter)
-Membership.create!(user: users[2], tenant: tenant1, role: :cashier)
+Membership.create!(user: users[1], tenant: tenant1, role: :cashier)
+Membership.create!(user: users[2], tenant: tenant1, role: :waiter)
 
-# Create memberships for tenant2
 Membership.create!(user: admin, tenant: tenant2, role: :admin)
-Membership.create!(user: users[3], tenant: tenant2, role: :manager)
-Membership.create!(user: users[4], tenant: tenant2, role: :waiter)
-
-# User can have different roles in different tenants
-Membership.create!(user: users[0], tenant: tenant2, role: :waiter)
-
+Membership.create!(user: users[0], tenant: tenant2, role: :manager)
 puts "Created #{Membership.count} memberships"
 
-puts 'Creating menus...'
+puts 'Creating dining tables...'
+t1 = DiningTable.create!(tenant: tenant1, name: 'Table 1', status: :free)
+t2 = DiningTable.create!(tenant: tenant1, name: 'Table 2', status: :free)
+t3 = DiningTable.create!(tenant: tenant1, name: 'Table 3', status: :free)
+t4 = DiningTable.create!(tenant: tenant1, name: 'Table 4', status: :free)
 
-# Menus for tenant1
-breakfast_menu = Menu.create!(
-  name: 'Breakfast Menu',
+a1 = DiningTable.create!(tenant: tenant2, name: 'Table A1', status: :free)
+a2 = DiningTable.create!(tenant: tenant2, name: 'Table A2', status: :free)
+puts "Created #{DiningTable.count} dining tables"
+
+puts 'Creating restaurant configurations...'
+RestaurantInfo.create!(
   tenant: tenant1,
-  status: :active
+  name: 'Spice Garden POS',
+  gstin: '27AAAAA1111A1Z1',
+  address: '123, Garden Street, Mumbai',
+  phone: '+91 9876543210',
+  email: 'info@spicegarden.com',
+  receipt_footer: 'Thank you for dining with us!'
 )
-
-lunch_menu = Menu.create!(
-  name: 'Lunch Menu',
-  tenant: tenant1,
-  status: :active
-)
-
-dinner_menu = Menu.create!(
-  name: 'Dinner Menu',
-  tenant: tenant1,
-  status: :active
-)
-
-# Menus for tenant2
-cafe_menu = Menu.create!(
-  name: 'All Day Menu',
+RestaurantInfo.create!(
   tenant: tenant2,
-  status: :active
+  name: 'Urban Eats Billing',
+  gstin: '27BBBBB2222B2Z2',
+  address: '456, Cafe Lane, Pune',
+  phone: '+91 9876543211',
+  email: 'info@urbaneats.com',
+  receipt_footer: 'Visit again soon!'
 )
 
-beverages_menu = Menu.create!(
-  name: 'Beverages',
-  tenant: tenant2,
-  status: :active
-)
+puts 'Creating categories...'
+c_appetizers = Category.create!(tenant: tenant1, name: 'Appetizers', description: 'Starters and small plates', status: :active)
+c_mains = Category.create!(tenant: tenant1, name: 'Mains', description: 'Curries, biryanis and breads', status: :active)
+c_beverages = Category.create!(tenant: tenant1, name: 'Beverages', description: 'Cold drinks and hot brews', status: :active)
 
-puts "Created #{Menu.count} menus"
+c_cafe = Category.create!(tenant: tenant2, name: 'Cafe Eats', description: 'Sandwiches, burgers and pasta', status: :active)
+puts "Created #{Category.count} categories"
 
-puts 'Creating items...'
+puts 'Creating products & stock...'
+p_paneer = Product.create!(tenant: tenant1, category: c_appetizers, name: 'Paneer Tikka', price: 180.00, gst_rate: 5.0, unit: 'plate', is_available: true)
+p_biryani = Product.create!(tenant: tenant1, category: c_mains, name: 'Chicken Biryani', price: 250.00, gst_rate: 5.0, unit: 'plate', is_available: true)
+p_butter_chicken = Product.create!(tenant: tenant1, category: c_mains, name: 'Butter Chicken', price: 280.00, gst_rate: 5.0, unit: 'bowl', is_available: true)
+p_naan = Product.create!(tenant: tenant1, category: c_mains, name: 'Garlic Naan', price: 50.00, gst_rate: 5.0, unit: 'piece', is_available: true)
+p_chai = Product.create!(tenant: tenant1, category: c_beverages, name: 'Masala Chai', price: 40.00, gst_rate: 5.0, unit: 'cup', is_available: true)
 
-# Breakfast items for tenant1
-Item.create!(
-  name: 'Masala Dosa',
-  price: 120.00,
-  unit: 'piece',
-  description: 'Crispy rice crepe with spiced potato filling',
-  menu: breakfast_menu,
-  tenant: breakfast_menu.tenant,
-  is_available: true
-)
+p_burger = Product.create!(tenant: tenant2, category: c_cafe, name: 'Veggie Burger', price: 150.00, gst_rate: 18.0, unit: 'piece', is_available: true)
 
-Item.create!(
-  name: 'Idli Sambar',
-  price: 80.00,
-  unit: 'plate',
-  description: 'Steamed rice cakes with lentil soup',
-  menu: breakfast_menu,
-  tenant: breakfast_menu.tenant,
-  is_available: true
-)
+# Update stock levels
+Inventory.find_by(product_id: p_paneer.id)&.update!(stock_qty: 50, low_stock_threshold: 10)
+Inventory.find_by(product_id: p_biryani.id)&.update!(stock_qty: 30, low_stock_threshold: 5)
+Inventory.find_by(product_id: p_butter_chicken.id)&.update!(stock_qty: 40, low_stock_threshold: 8)
+Inventory.find_by(product_id: p_naan.id)&.update!(stock_qty: 100, low_stock_threshold: 15)
+Inventory.find_by(product_id: p_chai.id)&.update!(stock_qty: 200, low_stock_threshold: 20)
 
-Item.create!(
-  name: 'Poha',
-  price: 60.00,
-  unit: 'plate',
-  description: 'Flattened rice with vegetables',
-  menu: breakfast_menu,
-  tenant: breakfast_menu.tenant,
-  is_available: true
-)
+Inventory.find_by(product_id: p_burger.id)&.update!(stock_qty: 25, low_stock_threshold: 5)
 
-# Lunch items for tenant1
-Item.create!(
-  name: 'Chicken Biryani',
-  price: 250.00,
-  unit: 'plate',
-  description: 'Aromatic basmati rice with tender chicken',
-  menu: lunch_menu,
-  tenant: lunch_menu.tenant,
-  is_available: true
-)
+puts "Created #{Product.count} products with stock initialized"
 
-Item.create!(
-  name: 'Paneer Butter Masala',
-  price: 200.00,
-  unit: 'bowl',
-  description: 'Cottage cheese in rich tomato gravy',
-  menu: lunch_menu,
-  tenant: lunch_menu.tenant,
-  is_available: true
-)
+puts 'Creating customers...'
+cust_john = Customer.create!(tenant: tenant1, name: 'John Doe', phone: '9876543210', email: 'john@example.com', loyalty_points: 12)
+cust_jane = Customer.create!(tenant: tenant1, name: 'Jane Smith', phone: '9876543211', email: 'jane@example.com', loyalty_points: 45)
+puts "Created #{Customer.count} customers"
 
-Item.create!(
-  name: 'Dal Tadka',
-  price: 120.00,
-  unit: 'bowl',
-  description: 'Yellow lentils tempered with spices',
-  menu: lunch_menu,
-  tenant: lunch_menu.tenant,
-  is_available: true
-)
+puts 'Creating sample orders...'
+# 1. Draft Order on Table 1 (unsubmitted)
+o1 = Order.create!(tenant: tenant1, user: admin, dining_table: t1, status: :draft)
+OrderService.add_item_to_order!(o1, p_paneer, 2, p_paneer.price, 'Less spicy')
+OrderService.add_item_to_order!(o1, p_naan, 3, p_naan.price)
 
-Item.create!(
-  name: 'Naan',
-  price: 40.00,
-  unit: 'piece',
-  description: 'Traditional Indian flatbread',
-  menu: lunch_menu,
-  tenant: lunch_menu.tenant,
-  is_available: true
-)
+# 2. Active Pending Order on Table 2 (sent to kitchen, inventory deducted)
+o2 = Order.create!(tenant: tenant1, user: admin, dining_table: t2, status: :draft)
+OrderService.add_item_to_order!(o2, p_biryani, 2, p_biryani.price)
+OrderService.add_item_to_order!(o2, p_chai, 4, p_chai.price)
+OrderService.transition_to_active!(o2)
 
-# Dinner items for tenant1
-Item.create!(
-  name: 'Tandoori Chicken',
-  price: 350.00,
-  unit: 'plate',
-  description: 'Grilled chicken marinated in yogurt and spices',
-  menu: dinner_menu,
-  tenant: dinner_menu.tenant,
-  is_available: true
-)
+# 3. Completed Checkout Order (loyalty points awarded, table freed)
+o3 = Order.create!(tenant: tenant1, user: admin, dining_table: t3, status: :draft, customer: cust_john)
+OrderService.add_item_to_order!(o3, p_butter_chicken, 1, p_butter_chicken.price)
+OrderService.add_item_to_order!(o3, p_naan, 2, p_naan.price)
+OrderService.transition_to_active!(o3)
+OrderService.complete_payment!(o3, :cash, 5.0, 2.5, 'Cash payment with 5% discount')
 
-Item.create!(
-  name: 'Fish Curry',
-  price: 280.00,
-  unit: 'bowl',
-  description: 'Fresh fish in coconut curry sauce',
-  menu: dinner_menu,
-  tenant: dinner_menu.tenant,
-  is_available: true
-)
-
-# Cafe items for tenant2
-Item.create!(
-  name: 'Caesar Salad',
-  price: 180.00,
-  unit: 'bowl',
-  description: 'Romaine lettuce with Caesar dressing',
-  menu: cafe_menu,
-  tenant: cafe_menu.tenant,
-  is_available: true
-)
-
-Item.create!(
-  name: 'Margherita Pizza',
-  price: 320.00,
-  unit: 'piece',
-  description: 'Classic pizza with tomato, mozzarella, and basil',
-  menu: cafe_menu,
-  tenant: cafe_menu.tenant,
-  is_available: true
-)
-
-Item.create!(
-  name: 'Pasta Alfredo',
-  price: 250.00,
-  unit: 'plate',
-  description: 'Creamy white sauce pasta',
-  menu: cafe_menu,
-  tenant: cafe_menu.tenant,
-  is_available: true
-)
-
-# Beverages for tenant2
-Item.create!(
-  name: 'Cappuccino',
-  price: 120.00,
-  unit: 'piece',
-  description: 'Espresso with steamed milk foam',
-  menu: beverages_menu,
-  tenant: beverages_menu.tenant,
-  is_available: true
-)
-
-Item.create!(
-  name: 'Fresh Orange Juice',
-  price: 80.00,
-  unit: 'ml',
-  description: 'Freshly squeezed orange juice',
-  menu: beverages_menu,
-  tenant: beverages_menu.tenant,
-  is_available: true
-)
-
-Item.create!(
-  name: 'Masala Chai',
-  price: 40.00,
-  unit: 'piece',
-  description: 'Indian spiced tea',
-  menu: beverages_menu,
-  tenant: beverages_menu.tenant,
-  is_available: true
-)
-
-puts "Created #{Item.count} items"
-
-puts 'Creating orders...'
-
-# Create orders for tenant1
-order1 = Order.create!(
-  tenant: tenant1,
-  user: users[1], # waiter
-  dining_table: t1_table2,
-  status: :completed,
-  total_price: 0,
-  discount: 20.00,
-  tax: 35.00
-)
-
-OrderItem.create!(order: order1, item: Item.find_by(name: 'Chicken Biryani'), quantity: 2, price: 250.00)
-OrderItem.create!(order: order1, item: Item.find_by(name: 'Naan'), quantity: 4, price: 40.00)
-OrderItem.create!(order: order1, item: Item.find_by(name: 'Dal Tadka'), quantity: 1, price: 120.00)
-
-# order1.update!(total_price: order1.calculate_total)
-
-order2 = Order.create!(
-  tenant: tenant1,
-  user: users[1],
-  dining_table: t1_table2,
-  status: :preparing,
-  total_price: 0,
-  tax: 18.00
-)
-
-OrderItem.create!(order: order2, item: Item.find_by(name: 'Masala Dosa'), quantity: 3, price: 120.00)
-OrderItem.create!(order: order2, item: Item.find_by(name: 'Idli Sambar'), quantity: 2, price: 80.00)
-
-# order2.update!(total_price: order2.calculate_total)
-
-# Create orders for tenant2
-order3 = Order.create!(
-  tenant: tenant2,
-  user: users[4],
-  dining_table: t2_table1,
-  status: :completed,
-  total_price: 0,
-  discount: 50.00,
-  tax: 40.00
-)
-
-OrderItem.create!(order: order3, item: Item.find_by(name: 'Margherita Pizza'), quantity: 1, price: 320.00)
-OrderItem.create!(order: order3, item: Item.find_by(name: 'Cappuccino'), quantity: 2, price: 120.00)
-
-# order3.update!(total_price: order3.calculate_total)
-
-order4 = Order.create!(
-  tenant: tenant2,
-  user: users[4],
-  dining_table: t2_table1,
-  status: :pending,
-  total_price: 0,
-  tax: 15.00
-)
-
-OrderItem.create!(order: order4, item: Item.find_by(name: 'Caesar Salad'), quantity: 1, price: 180.00)
-OrderItem.create!(order: order4, item: Item.find_by(name: 'Fresh Orange Juice'), quantity: 1, price: 80.00)
-
-# order4.update!(total_price: order4.calculate_total)
-
-puts "Created #{Order.count} orders with #{OrderItem.count} order items"
-
-puts "\n" + ('=' * 50)
-puts 'SEED DATA SUMMARY'
-puts '=' * 50
-puts "Users: #{User.count}"
-puts "Tenants: #{Tenant.count}"
-puts "Memberships: #{Membership.count}"
-puts "Menus: #{Menu.count}"
-puts "Items: #{Item.count}"
-puts "Orders: #{Order.count}"
-puts "Order Items: #{OrderItem.count}"
-puts '=' * 50
-
-puts "\nLogin credentials:"
-puts 'Admin: admin@example.com / password123'
-puts 'Users: user1@example.com to user5@example.com / password123'
-puts "\nSeeding completed successfully! 🎉"
+puts "Created #{Order.count} orders with KOTs and inventory tracking verified!"
+puts 'Seeding completed successfully! 🎉'

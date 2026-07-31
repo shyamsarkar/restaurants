@@ -3,10 +3,19 @@
 module Api
   module V1
     class TenantsController < ApplicationController
-      load_and_authorize_resource
+      skip_before_action :set_current_context, only: [:index]
+      skip_load_and_authorize_resource only: [:index]
+      load_and_authorize_resource except: [:index]
 
       def index
-        render json: @tenants
+        tenants = current_user.memberships.includes(:tenant).map do |m|
+          {
+            id: m.tenant.id,
+            name: m.tenant.name,
+            role: m.role
+          }
+        end
+        render json: tenants
       end
 
       def show

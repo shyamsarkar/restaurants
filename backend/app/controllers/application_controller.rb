@@ -37,8 +37,15 @@ class ApplicationController < ActionController::Base
 
     Current.tenant = Current.membership.tenant
 
-    return if Current.tenant.active?
+    unless Current.tenant.active?
+      render json: { error: 'Tenant inactive' }, status: :forbidden
+      return
+    end
 
-    render json: { error: 'Tenant inactive' }, status: :forbidden
+    ActsAsTenant.current_tenant = Current.tenant
+  end
+
+  def current_tenant
+    Current.tenant
   end
 end

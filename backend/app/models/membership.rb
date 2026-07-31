@@ -3,8 +3,9 @@
 class Membership < ApplicationRecord
   belongs_to :user
   belongs_to :tenant
+  acts_as_tenant :tenant
 
-  enum :role, { admin: 0, manager: 1, cashier: 2, waiter: 3 }
+  enum :role, { owner: 0, admin: 1, manager: 2, cashier: 3, waiter: 4 }
 
   validates :user_id, presence: true
   validates :role, presence: true

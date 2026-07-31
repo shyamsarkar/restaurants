@@ -3,17 +3,17 @@ import { NavLink, useNavigate } from 'react-router-dom';
 
 import { 
   Home, 
+  ShoppingCart, 
+  TableRestaurant, 
+  Kitchen as KitchenIcon, 
+  MenuBook, 
+  Inventory as InventoryIcon, 
+  PeopleAlt, 
   BarChart, 
-  People, 
-  FolderOpen, 
-  Description, 
+  Settings as SettingsIcon,
   ChevronLeft,
   ChevronRight,
-  ShoppingCart,
-  TableRestaurant,
-  MenuBook,
-  ChecklistRtl,
-  Scale
+  Logout
 } from '@mui/icons-material';
 
 import ProfileDropdown from './ProfileDropdown';
@@ -22,75 +22,72 @@ import { useCommonStore } from '@/stores/common.store';
 const basePath = '/restaurants';
 
 const menuItems = [
-  { icon: Home, label: 'Dashboard', path: `${basePath}` },
-  { icon: ShoppingCart, label: 'Orders', path: `${basePath}/orders` },
-  { icon: TableRestaurant, label: 'Table', path: `${basePath}/tables` },
-  { icon: MenuBook, label: 'Menu', path: `${basePath}/menu` },
-  { icon: ChecklistRtl, label: 'Items', path: `${basePath}/items` },
-  { icon: People, label: 'Users', path: `${basePath}/users` },
-  { icon: Scale, label: '---', path: `${basePath}/units` },
-  { icon: BarChart, label: 'Analytics', path: `${basePath}/analytics` },
-  { icon: FolderOpen, label: 'Projects', path: `${basePath}/projects` },
-  { icon: Description, label: 'Reports', path: `${basePath}/reports` },
+  { icon: ShoppingCart, label: 'Billing POS', path: `${basePath}/orders` },
+  { icon: TableRestaurant, label: 'Tables', path: `${basePath}/tables` },
+  { icon: KitchenIcon, label: 'Kitchen View', path: `${basePath}/kitchen` },
+  { icon: MenuBook, label: 'Menu Editor', path: `${basePath}/menu` },
+  { icon: InventoryIcon, label: 'Inventory', path: `${basePath}/inventory` },
+  { icon: PeopleAlt, label: 'Customers', path: `${basePath}/customers` },
+  { icon: BarChart, label: 'Reports', path: `${basePath}/reports` },
+  { icon: SettingsIcon, label: 'Settings', path: `${basePath}/settings` },
 ];
 
 const Sidebar: React.FC = () => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const showSidebar = useCommonStore((state) => state.showSidebar)
-  const { toggleSidebar } = useCommonStore()
+  const showSidebar = useCommonStore((state) => state.showSidebar);
+  const { toggleSidebar } = useCommonStore();
   const navigate = useNavigate();
 
   const handleNavigate = () => {
     navigate(basePath);
-  }
+  };
 
   return (
-    <div className={`fixed left-0 top-0 h-full bg-white shadow-xl z-50 transition-all duration-300 ease-in-out ${
+    <div className={`fixed left-0 top-0 h-full bg-slate-900 text-slate-100 shadow-xl z-50 transition-all duration-300 ease-in-out ${
       showSidebar ? 'w-56' : 'w-16'
     }`}>
       {/* Header */}
-      <div className="flex items-center justify-between p-2 border-b border-gray-200">
+      <div className="flex items-center justify-between p-3 border-b border-slate-800">
         <div className={`flex items-center space-x-3 ${showSidebar ? 'opacity-100' : 'opacity-0'} transition-opacity duration-200 ${showSidebar ? '' : 'hidden'}`}>
-          <div className="hidden w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <Home className="w-5 h-5 text-white" />
-          </div>
-          <h1 onClick={handleNavigate} className="cursor-pointer text-xl font-bold text-gray-800 whitespace-nowrap">Restaurants</h1>
+          <h1 onClick={handleNavigate} className="cursor-pointer text-lg font-bold bg-gradient-to-r from-blue-400 to-amber-400 bg-clip-text text-transparent whitespace-nowrap">
+            MealDesk
+          </h1>
         </div>
         <button
           onClick={() => toggleSidebar(!showSidebar)}
-          className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+          className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors duration-200"
         >
           {showSidebar ? (
-            <ChevronLeft className="w-5 h-5 text-gray-600" />
+            <ChevronLeft className="w-5 h-5" />
           ) : (
-            <ChevronRight className="w-5 h-5 text-gray-600" />
+            <ChevronRight className="w-5 h-5" />
           )}
         </button>
       </div>
 
       {/* Navigation */}
-      <nav className="mt-4 px-1">
-        <ul className="space-y-2">
+      <nav className="mt-4 px-2">
+        <ul className="space-y-1">
           {menuItems.map((item) => (
             <li key={item.path}>
               <NavLink
                 to={item.path}
                 className={({ isActive }) =>
-                  `flex items-center px-4 py-1 rounded-lg transition-all duration-200 group relative ${
+                  `flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 group relative ${
                     isActive
-                      ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-600'
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-blue-600/90 text-white font-medium shadow-md shadow-blue-900/30'
+                      : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
                   }`
                 }
               >
                 <item.icon className="w-5 h-5 flex-shrink-0" />
-                <span className={`ml-3 font-medium ${showSidebar ? 'opacity-100' : 'opacity-0 w-0'} transition-all duration-200`}>
+                <span className={`ml-3 text-sm font-medium whitespace-nowrap ${showSidebar ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'} transition-all duration-200`}>
                   {item.label}
                 </span>
                 
                 {/* Tooltip for collapsed state */}
                 {!showSidebar && (
-                  <div className="absolute left-full ml-2 px-3 py-1 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                  <div className="absolute left-full ml-3 px-2 py-1 bg-slate-800 text-slate-100 text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 pointer-events-none">
                     {item.label}
                   </div>
                 )}
@@ -101,23 +98,22 @@ const Sidebar: React.FC = () => {
       </nav>
 
       {/* Profile Section */}
-      <div className="absolute bottom-0 left-0 right-0 p-2 border-t border-gray-200">
+      <div className="absolute bottom-0 left-0 right-0 p-2 border-t border-slate-800">
         <div className="relative">
           <button
             onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-            className={`flex items-center w-full p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200 ${
+            className={`flex items-center w-full p-2 rounded-lg hover:bg-slate-800 transition-colors duration-200 ${
               showSidebar ? 'space-x-3' : 'justify-center'
             }`}
           >
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-              <People className="w-5 h-5 text-white" />
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-amber-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-white text-xs font-bold">MD</span>
             </div>
-            <div className={`flex-1 text-left truncate ${showSidebar ? 'opacity-100' : 'opacity-0 w-0'} transition-all duration-200`}>
-              <div className="text-sm font-medium text-gray-900">Shyam Sarkar</div>
+            <div className={`flex-1 text-left truncate ${showSidebar ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'} transition-all duration-200`}>
+              <div className="text-xs font-semibold text-slate-200">System Operator</div>
             </div>
           </button>
 
-          {/* Profile Dropdown */}
           {profileDropdownOpen && (
             <ProfileDropdown onClose={() => setProfileDropdownOpen(false)} />
           )}

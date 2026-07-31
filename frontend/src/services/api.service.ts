@@ -8,13 +8,14 @@ interface ApiRequestParams {
   data?: unknown;
   params?: unknown;
 }
+
 export interface User {
   id: number;
   email: string;
   first_name: string | null;
   last_name: string | null;
   is_active: boolean;
-  role: "admin" | "manager" | "cashier" | "waiter" | null;
+  role: "owner" | "admin" | "manager" | "cashier" | "waiter" | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -24,7 +25,7 @@ export interface CreateUserPayload {
   first_name: string;
   last_name: string;
   is_active: boolean;
-  role: "admin" | "manager" | "cashier" | "waiter";
+  role: "owner" | "admin" | "manager" | "cashier" | "waiter";
   password: string;
   password_confirmation: string;
 }
@@ -34,7 +35,7 @@ export interface UpdateUserPayload {
   first_name: string;
   last_name: string;
   is_active: boolean;
-  role: "admin" | "manager" | "cashier" | "waiter";
+  role: "owner" | "admin" | "manager" | "cashier" | "waiter";
   password?: string;
   password_confirmation?: string;
 }
@@ -42,46 +43,140 @@ export interface UpdateUserPayload {
 export interface DiningTable {
   id: number;
   name: string;
-  status: string;
-  created_at: string;
-}
-export interface Menu {
-  id: number;
-  name: string;
+  status: "free" | "occupied" | "billed";
+  current_order_id: number | null;
+  merged_into_id: number | null;
   created_at: string;
 }
 
-export interface MenuItem {
+export interface Category {
+  id: number;
+  name: string;
+  description?: string;
+  status?: string;
+  created_at: string;
+}
+
+export interface Product {
   id: number;
   name: string;
   price: number;
-  menu_id: string;
+  gst_rate: number;
+  image_path?: string;
+  is_available: boolean;
+  category_id: number;
+  inventory?: Inventory;
+}
+
+export interface Inventory {
+  product_id: number;
+  stock_qty: number;
+  low_stock_threshold: number;
+  product?: Product;
+}
+
+export interface PurchaseHistory {
+  id: number;
+  product_id: number;
+  quantity: number;
+  supplier: string;
+  unit_price: number;
+  date: string;
+  product?: Product;
+}
+
+export interface Customer {
+  id: number;
+  name: string;
+  phone: string;
+  email?: string;
+  loyalty_points: number;
 }
 
 export interface OrderItem {
   id: number;
   order_id: number;
-  item_id: number;
+  product_id: number;
+  name: string;
   quantity: number;
   price: number;
-  name?: string;
-  sub_total?: number;
+  gst_rate: number;
+  notes?: string;
+  kot_id?: number | null;
+  product?: Product;
 }
 
-export interface TableOrderItemsResponse {
-  order_id: number | null;
+export interface Order {
+  id: number;
+  dining_table_id: number | null;
+  customer_id: number | null;
+  subtotal: number;
+  tax: number;
+  discount: number;
+  service_charge: number;
+  round_off: number;
+  total: number;
+  status: "draft" | "pending" | "active" | "billed" | "completed" | "cancelled";
+  payment_mode: "cash" | "upi" | "card" | "mixed" | "nc" | "none";
+  order_type?: "dine_in" | "parcel";
+  notes?: string;
+  hold_name?: string | null;
+  cancelled_by?: string | null;
+  cancelled_at?: string | null;
+  cancel_reason?: string | null;
   order_items: OrderItem[];
+  dining_table?: DiningTable | null;
+  customer?: Customer | null;
 }
 
-type CreateMenuItemDto = {
-  name: string;
-  price: number;
-  menu_id: string;
-  unit?: string;
-};
+export interface KotItem {
+  id: number;
+  kot_id: number;
+  product_id: number;
+  quantity: number;
+  notes?: string;
+  product?: Product;
+}
 
-export interface Id {
-  id: number | string | null;
+export interface Kot {
+  id: number;
+  order_id: number;
+  status: "pending" | "preparing" | "ready" | "completed";
+  print_count: number;
+  created_at: string;
+  kot_items: KotItem[];
+}
+
+export interface RestaurantInfo {
+  id: number;
+  name: string;
+  logo?: string;
+  gstin?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  receipt_footer?: string;
+}
+
+export interface AuditLog {
+  id: number;
+  username: string;
+  action: string;
+  target_type?: string;
+  target_id?: number;
+  details?: string;
+  created_at: string;
+}
+
+export interface ReportData {
+  metrics: {
+    total_revenue: number;
+    total_orders: number;
+    total_tax: number;
+    total_discount: number;
+  };
+  payment_modes: { mode: string; revenue: number }[];
+  categories: { category: string; revenue: number }[];
 }
 
 export const apiClient = async <TResponse>({
@@ -97,7 +192,6 @@ export const apiClient = async <TResponse>({
       data,
       params,
     });
-
     return response.data;
   } catch (error) {
     const err = error as AxiosError<{ message?: string }>;
@@ -105,15 +199,13 @@ export const apiClient = async <TResponse>({
   }
 };
 
+// Users
 export const loginUser = async (email: string, password: string) => {
-  return apiClient<{ user: AuthUser, tenant: { id: string, name: string } }>({
+  return apiClient<{ user: AuthUser; tenant: { id: string; name: string } }>({
     method: "post",
     url: "/users/sign_in",
     data: {
-      user: {
-        email,
-        password,
-      },
+      user: { email, password },
     },
   });
 };
@@ -129,8 +221,8 @@ export const getUsers = async () => {
   return apiClient<User[]>({
     method: "get",
     url: "/api/v1/users",
-  })
-}
+  });
+};
 
 export const createUser = async (data: CreateUserPayload) => {
   return apiClient<User>({
@@ -140,10 +232,7 @@ export const createUser = async (data: CreateUserPayload) => {
   });
 };
 
-export const updateUser = async (
-  userId: number | string,
-  data: UpdateUserPayload
-) => {
+export const updateUser = async (userId: number | string, data: UpdateUserPayload) => {
   return apiClient<User>({
     method: "patch",
     url: `/api/v1/users/${userId}`,
@@ -159,19 +248,13 @@ export const deleteUser = async (userId: number | string) => {
 };
 
 export const getTenants = async () => {
-  return apiClient<{ id: string, name: string }[]>({
+  return apiClient<{ id: string; name: string; role: string }[]>({
     method: "get",
     url: "/api/v1/tenants",
-  })
-}
-
-export const getDashboardData = async () => {
-  return apiClient<void>({
-    method: "get",
-    url: "/api/dashboard",
   });
 };
 
+// Dining Tables
 export const getDiningTables = async () => {
   return apiClient<DiningTable[]>({
     method: "get",
@@ -187,105 +270,119 @@ export const createDiningTable = async (data: { name: string }) => {
   });
 };
 
-export const updateDiningTable = async (
-  table_id: number | string,
-  data: { name: string }
-) => {
+export const updateDiningTable = async (tableId: number | string, data: { name: string }) => {
   return apiClient<DiningTable>({
     method: "patch",
-    url: `/api/v1/dining_tables/${table_id}`,
+    url: `/api/v1/dining_tables/${tableId}`,
     data,
   });
 };
 
-export const deleteDiningTable = async (table_id: number | string) => {
+export const deleteDiningTable = async (tableId: number | string) => {
   return apiClient<DiningTable>({
     method: "delete",
-    url: `/api/v1/dining_tables/${table_id}`,
+    url: `/api/v1/dining_tables/${tableId}`,
   });
 };
 
-export const getMenus = async () => {
-  return apiClient<Menu[]>({
-    method: "get",
-    url: "/api/v1/menus",
-  });
-};
-
-export const createMenu = async (data: { name: string }) => {
-  return apiClient<Menu>({
+export const transferTable = async (tableId: number, targetTableId: number) => {
+  return apiClient<{ success: boolean }>({
     method: "post",
-    url: "/api/v1/menus",
+    url: `/api/v1/dining_tables/${tableId}/transfer`,
+    data: { target_table_id: targetTableId },
+  });
+};
+
+export const mergeTable = async (tableId: number, targetTableId: number) => {
+  return apiClient<{ success: boolean }>({
+    method: "post",
+    url: `/api/v1/dining_tables/${tableId}/merge`,
+    data: { target_table_id: targetTableId },
+  });
+};
+
+// Categories (Menus)
+export const getCategories = async () => {
+  return apiClient<Category[]>({
+    method: "get",
+    url: "/api/v1/categories",
+  });
+};
+
+export const createCategory = async (data: { name: string; description?: string }) => {
+  return apiClient<Category>({
+    method: "post",
+    url: "/api/v1/categories",
     data,
   });
 };
 
-export const updateMenu = async (
-  table_id: number | string,
-  data: { name: string }
-) => {
-  return apiClient<Menu>({
+export const updateCategory = async (id: number | string, data: { name: string; description?: string }) => {
+  return apiClient<Category>({
     method: "patch",
-    url: `/api/v1/menus/${table_id}`,
+    url: `/api/v1/categories/${id}`,
     data,
   });
 };
 
-export const deleteMenu = async (table_id: number | string) => {
-  return apiClient<Menu>({
+export const deleteCategory = async (id: number | string) => {
+  return apiClient<Category>({
     method: "delete",
-    url: `/api/v1/menus/${table_id}`,
+    url: `/api/v1/categories/${id}`,
   });
 };
 
-export const getMenuItems = async () => {
-  return apiClient<MenuItem[]>({
+// Products (Items)
+export const getProducts = async () => {
+  return apiClient<Product[]>({
     method: "get",
-    url: "/api/v1/items",
+    url: "/api/v1/products",
   });
 };
 
-export const createMenuItem = async (data: CreateMenuItemDto) => {
-  return apiClient<MenuItem>({
+export const createProduct = async (data: {
+  name: string;
+  price: number;
+  gst_rate: number;
+  image_path?: string;
+  category_id: number;
+  is_available: boolean;
+}) => {
+  return apiClient<Product>({
     method: "post",
-    url: "/api/v1/items",
-    data: {
-      ...data,
-      unit: data.unit ?? "piece",
-    },
+    url: "/api/v1/products",
+    data,
   });
 };
 
-export const updateMenuItem = async (
-  table_id: number | string,
-  data: { name: string; price: number; menu_id: string; unit?: string }
+export const updateProduct = async (
+  id: number | string,
+  data: {
+    name: string;
+    price: number;
+    gst_rate: number;
+    image_path?: string;
+    category_id: number;
+    is_available: boolean;
+  }
 ) => {
-  return apiClient<MenuItem>({
+  return apiClient<Product>({
     method: "patch",
-    url: `/api/v1/items/${table_id}`,
-    data: {
-      ...data,
-      unit: data.unit ?? "piece",
-    },
+    url: `/api/v1/products/${id}`,
+    data,
   });
 };
 
-export const deleteMenuItem = async (table_id: number | string) => {
-  return apiClient<MenuItem>({
+export const deleteProduct = async (id: number | string) => {
+  return apiClient<Product>({
     method: "delete",
-    url: `/api/v1/items/${table_id}`,
+    url: `/api/v1/products/${id}`,
   });
 };
 
-export const getOrderItems = async (orderId: number | string) => {
-  return apiClient<OrderItem[]>({
-    method: "get",
-    url: `/api/v1/orders/${orderId}/items`,
-  });
-};
-
+// Order Items (Cart actions)
 export const getOrderItemsByDiningTable = async (diningTableId: number | string) => {
-  return apiClient<TableOrderItemsResponse>({
+  return apiClient<{ order_id: number | null; order_items: OrderItem[] }>({
     method: "get",
     url: "/api/v1/order_items",
     params: { dining_table_id: diningTableId },
@@ -294,21 +391,23 @@ export const getOrderItemsByDiningTable = async (diningTableId: number | string)
 
 export const addOrderItem = async (
   diningTableId: number | string | null,
-  itemId: number | string | null,
-  price: number
+  productId: number | string | null,
+  price: number,
+  quantity = 1,
+  notes = "",
+  orderId?: number | string | null
 ) => {
-  if (!diningTableId || !itemId) {
-    throw new Error("Invalid dining table or item.");
-  }
-
   return apiClient<OrderItem>({
     method: "post",
     url: "/api/v1/order_items",
     data: {
       dining_table_id: diningTableId,
+      order_id: orderId,
       order_item: {
-        item_id: itemId,
+        product_id: productId,
         price,
+        quantity,
+        notes,
       },
     },
   });
@@ -321,13 +420,201 @@ export const deleteOrderItem = async (orderItemId: number | string) => {
   });
 };
 
-export const updateOrderItem = async (
-  orderItemId: number | string,
-  data: { quantity: number }
-) => {
+export const updateOrderItem = async (orderItemId: number | string, data: { quantity: number }) => {
   return apiClient<OrderItem & { total_price: number }>({
     method: "patch",
     url: `/api/v1/order_items/${orderItemId}`,
     data,
+  });
+};
+
+export const cancelOrderItem = async (orderItemId: number, quantity: number, reason: string) => {
+  return apiClient<{ success: boolean; total_price: number }>({
+    method: "post",
+    url: `/api/v1/order_items/${orderItemId}/cancel`,
+    data: { quantity, reason },
+  });
+};
+
+// Orders
+export const createOrder = async (data: { dining_table_id?: number | null; customer_id?: number | null; order_type?: "dine_in" | "parcel" }) => {
+  return apiClient<Order>({
+    method: "post",
+    url: "/api/v1/orders",
+    data,
+  });
+};
+
+export const getOrders = async (params?: { status?: string; order_type?: string }) => {
+  return apiClient<Order[]>({
+    method: "get",
+    url: "/api/v1/orders",
+    params,
+  });
+};
+
+export const updateOrder = async (id: number | string, data: Partial<Order>) => {
+  return apiClient<Order>({
+    method: "patch",
+    url: `/api/v1/orders/${id}`,
+    data,
+  });
+};
+
+export const getOrder = async (id: number | string) => {
+  return apiClient<Order>({
+    method: "get",
+    url: `/api/v1/orders/${id}`,
+  });
+};
+
+export const sendKot = async (id: number) => {
+  return apiClient<Order>({
+    method: "post",
+    url: `/api/v1/orders/${id}/kot`,
+  });
+};
+
+export const holdOrder = async (id: number, holdName: string) => {
+  return apiClient<Order>({
+    method: "post",
+    url: `/api/v1/orders/${id}/hold`,
+    data: { hold_name: holdName },
+  });
+};
+
+export const resumeOrders = async () => {
+  return apiClient<Order[]>({
+    method: "get",
+    url: "/api/v1/orders/resume",
+  });
+};
+
+export const payOrder = async (
+  id: number,
+  data: { payment_mode: string; discount: number; service_charge: number; notes?: string }
+) => {
+  return apiClient<Order>({
+    method: "post",
+    url: `/api/v1/orders/${id}/pay`,
+    data,
+  });
+};
+
+export const cancelOrder = async (id: number, reason: string) => {
+  return apiClient<Order>({
+    method: "post",
+    url: `/api/v1/orders/${id}/cancel`,
+    data: { reason },
+  });
+};
+
+// KOTs
+export const getKots = async () => {
+  return apiClient<Kot[]>({
+    method: "get",
+    url: "/api/v1/kots",
+  });
+};
+
+export const updateKotStatus = async (id: number, status: string) => {
+  return apiClient<Kot>({
+    method: "patch",
+    url: `/api/v1/kots/${id}`,
+    data: { status },
+  });
+};
+
+// Inventories
+export const getInventories = async () => {
+  return apiClient<Inventory[]>({
+    method: "get",
+    url: "/api/v1/inventories",
+  });
+};
+
+export const updateInventory = async (productId: number, stockQty: number, lowStockThreshold: number) => {
+  return apiClient<Inventory>({
+    method: "patch",
+    url: `/api/v1/inventories/${productId}`,
+    data: { stock_qty: stockQty, low_stock_threshold: lowStockThreshold },
+  });
+};
+
+export const purchaseInventory = async (data: {
+  product_id: number;
+  quantity: number;
+  supplier: string;
+  unit_price: number;
+  date?: string;
+}) => {
+  return apiClient<Inventory>({
+    method: "post",
+    url: "/api/v1/inventories/purchase",
+    data,
+  });
+};
+
+export const getPurchaseHistory = async () => {
+  return apiClient<PurchaseHistory[]>({
+    method: "get",
+    url: "/api/v1/inventories/history",
+  });
+};
+
+// Customers
+export const searchCustomerByPhone = async (phone: string) => {
+  return apiClient<Customer>({
+    method: "get",
+    url: "/api/v1/customers",
+    params: { phone },
+  });
+};
+
+export const getCustomers = async () => {
+  return apiClient<Customer[]>({
+    method: "get",
+    url: "/api/v1/customers",
+  });
+};
+
+export const createCustomer = async (data: { name: string; phone: string; email?: string }) => {
+  return apiClient<Customer>({
+    method: "post",
+    url: "/api/v1/customers",
+    data,
+  });
+};
+
+// Reports
+export const getReports = async (startDate?: string, endDate?: string) => {
+  return apiClient<ReportData>({
+    method: "get",
+    url: "/api/v1/reports",
+    params: { start_date: startDate, end_date: endDate },
+  });
+};
+
+// Settings & Restaurant Info
+export const getRestaurantInfo = async () => {
+  return apiClient<RestaurantInfo>({
+    method: "get",
+    url: "/api/v1/restaurant_infos/1",
+  });
+};
+
+export const updateRestaurantInfo = async (data: Partial<RestaurantInfo>) => {
+  return apiClient<RestaurantInfo>({
+    method: "patch",
+    url: "/api/v1/restaurant_infos/1",
+    data,
+  });
+};
+
+// Audit Logs
+export const getAuditLogs = async () => {
+  return apiClient<AuditLog[]>({
+    method: "get",
+    url: "/api/v1/audit_logs",
   });
 };

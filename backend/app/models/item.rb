@@ -1,9 +1,0 @@
-# app/models/item.rb
-class Item < ApplicationRecord
-  belongs_to :tenant
-  belongs_to :menu
-
-  UNITS = %w[piece kg gram liter ml plate bowl serving dozen].freeze
-
-  validates :name, :price, presence: true
-end

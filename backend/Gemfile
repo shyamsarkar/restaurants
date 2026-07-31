@@ -20,22 +20,15 @@ gem 'devise'
 # Multi-tenancy
 gem 'acts_as_tenant'
 
-# Monitoring
-gem 'honeybadger'
-
 # Additional gems
 gem 'jsonapi-serializer'
 
 group :development, :test do
   gem 'dotenv-rails'
-  gem 'factory_bot_rails'
-  gem 'faker'
   gem 'pry'
-  gem 'rspec-rails'
 end
 
 group :development do
-  gem 'letter_opener'
   gem 'rubocop', require: false
   gem 'rubocop-rails', require: false
 end

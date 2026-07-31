@@ -1,198 +1,346 @@
 import { useEffect, useState } from "react";
-
 import {
-  RestaurantMenu as MenuIcon,
-  Add as AddIcon,
-  Delete,
-  Edit,
-} from "@mui/icons-material";
-
-import { z } from "zod";
-
-import IconButton from "@mui/material/IconButton";
-import Grid from "@mui/material/Grid";
-import Card from "@mui/material/Card";
-import Snackbar from "@mui/material/Snackbar";
-
-import {
+  getDiningTables,
   createDiningTable,
   deleteDiningTable,
-  DiningTable,
-  getDiningTables,
   updateDiningTable,
+  transferTable,
+  mergeTable,
+  DiningTable,
 } from "@/services/api.service";
-
-import { formatUTCToTimeZone } from "@/lib/helper";
-
-import { Alert, Button } from "@mui/material";
-
-const tableSchema = z.object({
-  name: z.string().min(1, "Table name is required"),
-});
+import { useToast } from "@/contexts/ToastContext";
+import {
+  Box,
+  Typography,
+  Grid,
+  Card,
+  CardContent,
+  Button,
+  TextField,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  MenuItem,
+  IconButton,
+  Chip,
+} from "@mui/material";
+import { Add, Delete, Edit, SwapHoriz, MergeType } from "@mui/icons-material";
 
 export const Tables = () => {
-  const [tableName, setTableName] = useState("");
   const [tables, setTables] = useState<DiningTable[]>([]);
-  const [openToastr, setOpenToastr] = useState(false);
+  const [tableName, setTableName] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
 
+  // Transfer / Merge states
+  const [openTransferDialog, setOpenTransferDialog] = useState(false);
+  const [openMergeDialog, setOpenMergeDialog] = useState(false);
+  const [sourceTable, setSourceTable] = useState<DiningTable | null>(null);
+  const [targetTableId, setTargetTableId] = useState<number | "">("");
+
+  const { showToast } = useToast();
+
   const fetchTables = async () => {
-    const tableData = await getDiningTables();
-    setTables(tableData);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const result = tableSchema.safeParse({ name: tableName });
-
-    if (!result.success) {
-      return;
-    }
-
     try {
-      if (editingId !== null) {
-        await updateDiningTable(editingId, { name: tableName });
-      } else {
-        await createDiningTable({ name: tableName });
-      }
-
-      fetchTables();
-      resetForm();
-    } catch {
-      setOpenToastr(true);
+      const data = await getDiningTables();
+      setTables(data);
+    } catch (error) {
+      console.error(error);
+      showToast("Failed to fetch dining tables.", "error");
     }
   };
-
-  const handleToastrClose = () => setOpenToastr(false);
 
   useEffect(() => {
     fetchTables();
   }, []);
 
-  const resetForm = () => {
-    setTableName("");
-    setEditingId(null);
-  };
+  const handleSubmitTable = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tableName.trim()) return;
 
-  const handleEdit = (table: DiningTable) => {
-    setEditingId(table.id);
-    setTableName(table.name);
-  };
-
-  const handleDelete = async (id: number) => {
-    if (confirm("Are you sure you want to delete this table?")) {
-      try {
-        await deleteDiningTable(id);
-        fetchTables();
-      } catch {
-        setOpenToastr(true);
+    try {
+      if (editingId !== null) {
+        await updateDiningTable(editingId, { name: tableName });
+        showToast("Table updated successfully.", "success");
+      } else {
+        await createDiningTable({ name: tableName });
+        showToast("Table created successfully.", "success");
       }
+      setTableName("");
+      setEditingId(null);
+      fetchTables();
+    } catch (error) {
+      console.error(error);
+      showToast("Operation failed.", "error");
     }
   };
 
-  return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Tables</h1>
-      </div>
-      <Grid container spacing={2}>
-        <Grid size={4}>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <MenuIcon className="text-blue-600" fontSize="small" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {editingId ? "Edit Table" : "Add Table"}
-                </h2>
-                <p className="text-sm text-gray-500">Create a new table</p>
-              </div>
-            </div>
+  const handleDeleteTable = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this table?")) return;
+    try {
+      await deleteDiningTable(id);
+      showToast("Table deleted successfully.", "success");
+      fetchTables();
+    } catch (error) {
+      console.error(error);
+      showToast("Failed to delete table. Active orders might exist.", "error");
+    }
+  };
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="menuName"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Table Name *
-                </label>
-                <input
-                  type="text"
-                  id="tableName"
+  const handleTransfer = async () => {
+    if (!sourceTable || !targetTableId) return;
+    try {
+      await transferTable(sourceTable.id, Number(targetTableId));
+      showToast(`Transferred active bill from ${sourceTable.name}`, "success");
+      setOpenTransferDialog(false);
+      setTargetTableId("");
+      setSourceTable(null);
+      fetchTables();
+    } catch (error) {
+      console.error(error);
+      showToast("Failed to transfer table.", "error");
+    }
+  };
+
+  const handleMerge = async () => {
+    if (!sourceTable || !targetTableId) return;
+    try {
+      await mergeTable(sourceTable.id, Number(targetTableId));
+      showToast(`Merged ${sourceTable.name} into target table`, "success");
+      setOpenMergeDialog(false);
+      setTargetTableId("");
+      setSourceTable(null);
+      fetchTables();
+    } catch (error) {
+      console.error(error);
+      showToast("Failed to merge tables.", "error");
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "occupied":
+        return "warning";
+      case "billed":
+        return "success";
+      default:
+        return "default";
+    }
+  };
+
+  // Find tables eligible for transfer (free tables)
+  const freeTables = tables.filter((t) => t.status === "free" && !t.merged_into_id);
+
+  // Find tables eligible for merge (active/free tables that aren't already merged)
+  const targetMergeTables = tables.filter(
+    (t) => t.id !== sourceTable?.id && !t.merged_into_id
+  );
+
+  return (
+    <Box className="p-6">
+      <Box className="flex justify-between items-center mb-6">
+        <Typography variant="h4" className="font-bold text-slate-800">
+          Tables Layout & Management
+        </Typography>
+      </Box>
+
+      <Grid container spacing={3}>
+        {/* Left Side: Create/Edit Table form */}
+        <Grid item xs={12} md={4}>
+          <Card variant="outlined" className="shadow-sm">
+            <CardContent className="p-5">
+              <Typography variant="h6" className="font-bold text-slate-800 mb-4">
+                {editingId ? "Modify Table" : "Register Table"}
+              </Typography>
+              <form onSubmit={handleSubmitTable} className="flex flex-col gap-4">
+                <TextField
+                  label="Table Name (e.g. Table 5)"
+                  variant="outlined"
+                  size="small"
+                  fullWidth
                   value={tableName}
                   onChange={(e) => setTableName(e.target.value)}
-                  placeholder="Floor 1, Table 1, etc."
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 outline-none placeholder-gray-400"
                 />
-              </div>
-
-              <div className="flex gap-3">
-                <Button
-                  type="submit"
-                  variant="contained"
-                  className="flex-1"
-                  startIcon={<AddIcon />}
-                >
-                  {editingId ? "Update Table" : "Create Table"}
-                </Button>
-                {editingId && (
-                  <Button variant="outlined" onClick={resetForm}>
-                    Cancel
+                <Box className="flex gap-2">
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    color="primary"
+                    startIcon={<Add />}
+                    fullWidth
+                  >
+                    {editingId ? "Update" : "Register"}
                   </Button>
-                )}
-              </div>
-            </form>
-          </div>
-        </Grid>
-        <Grid size={8}>
-          <Card className="p-4">
-            <div className="space-y-3">
-              {tables.map((table) => (
-                <div
-                  key={table.id}
-                  className="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200 group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <div>
-                      <span className="font-medium text-gray-900">
-                        {table.name}
-                      </span>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Added at {formatUTCToTimeZone(table.created_at)}
-                      </p>
-                    </div>
-                  </div>
-                  <div>
-                    <IconButton onClick={() => handleEdit(table)}>
-                      <Edit />
-                    </IconButton>
-                    <IconButton onClick={() => handleDelete(table.id)}>
-                      <Delete />
-                    </IconButton>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  {editingId && (
+                    <Button
+                      variant="outlined"
+                      color="inherit"
+                      onClick={() => {
+                        setEditingId(null);
+                        setTableName("");
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                </Box>
+              </form>
+            </CardContent>
           </Card>
+        </Grid>
+
+        {/* Right Side: Interactive Tables Grid */}
+        <Grid item xs={12} md={8}>
+          <Grid container spacing={2}>
+            {tables
+              .filter((t) => !t.merged_into_id) // hide merged tables from layout
+              .map((table) => (
+                <Grid item xs={6} sm={4} key={table.id}>
+                  <Card
+                    variant="outlined"
+                    className={`shadow-sm border-l-4 ${
+                      table.status === "occupied"
+                        ? "bg-amber-50/50 border-l-amber-500 border-amber-200"
+                        : table.status === "billed"
+                        ? "bg-emerald-50/50 border-l-emerald-500 border-emerald-200"
+                        : "bg-white border-l-slate-400 border-slate-200"
+                    }`}
+                  >
+                    <CardContent className="p-4">
+                      <Box className="flex justify-between items-start mb-2">
+                        <Typography variant="h6" className="font-bold text-slate-900">
+                          {table.name}
+                        </Typography>
+                        <Chip
+                          size="small"
+                          label={table.status.toUpperCase()}
+                          color={getStatusColor(table.status)}
+                        />
+                      </Box>
+
+                      {/* Merged indicator */}
+                      {table.merged_into_id && (
+                        <Typography variant="caption" className="text-slate-500 italic block mb-2">
+                          Merged into ID {table.merged_into_id}
+                        </Typography>
+                      )}
+
+                      <Box className="flex gap-1.5 justify-end mt-4">
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={() => {
+                            setSourceTable(table);
+                            setOpenTransferDialog(true);
+                          }}
+                          disabled={table.status === "free"}
+                        >
+                          <SwapHoriz />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          color="warning"
+                          onClick={() => {
+                            setSourceTable(table);
+                            setOpenMergeDialog(true);
+                          }}
+                        >
+                          <MergeType />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            setEditingId(table.id);
+                            setTableName(table.name);
+                          }}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => handleDeleteTable(table.id)}
+                        >
+                          <Delete className="w-4 h-4" />
+                        </IconButton>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+          </Grid>
         </Grid>
       </Grid>
 
-      {openToastr && (
-        <Snackbar
-          open
-          autoHideDuration={5000}
-          onClose={handleToastrClose}
-          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        >
-          <Alert onClose={handleToastrClose} severity="error" variant="filled">
-            Login failed. Please try again.
-          </Alert>
-        </Snackbar>
-      )}
-    </div>
+      {/* Transfer Dialog */}
+      <Dialog open={openTransferDialog} onClose={() => setOpenTransferDialog(false)} maxWidth="xs" fullWidth>
+        <DialogTitle className="font-bold text-slate-800">Transfer Table</DialogTitle>
+        <DialogContent className="py-2">
+          {sourceTable && (
+            <Box className="flex flex-col gap-4 mt-2">
+              <Typography variant="body2" className="text-slate-600">
+                Move active bill of <strong>{sourceTable.name}</strong> to an empty target table.
+              </Typography>
+              <TextField
+                select
+                label="Select Target Table"
+                variant="outlined"
+                size="small"
+                fullWidth
+                value={targetTableId}
+                onChange={(e) => setTargetTableId(e.target.value as number)}
+              >
+                {freeTables.map((t) => (
+                  <MenuItem key={t.id} value={t.id}>
+                    {t.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenTransferDialog(false)}>Cancel</Button>
+          <Button onClick={handleTransfer} color="primary" variant="contained" disabled={!targetTableId}>
+            Transfer Bill
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Merge Dialog */}
+      <Dialog open={openMergeDialog} onClose={() => setOpenMergeDialog(false)} maxWidth="xs" fullWidth>
+        <DialogTitle className="font-bold text-slate-800">Merge Tables</DialogTitle>
+        <DialogContent className="py-2">
+          {sourceTable && (
+            <Box className="flex flex-col gap-4 mt-2">
+              <Typography variant="body2" className="text-slate-600">
+                Merge table <strong>{sourceTable.name}</strong> into another target table.
+              </Typography>
+              <TextField
+                select
+                label="Select Target Table"
+                variant="outlined"
+                size="small"
+                fullWidth
+                value={targetTableId}
+                onChange={(e) => setTargetTableId(e.target.value as number)}
+              >
+                {targetMergeTables.map((t) => (
+                  <MenuItem key={t.id} value={t.id}>
+                    {t.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenMergeDialog(false)}>Cancel</Button>
+          <Button onClick={handleMerge} color="warning" variant="contained" disabled={!targetTableId}>
+            Merge Table
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 };
