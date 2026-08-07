@@ -58,17 +58,7 @@ class Api::V1::OrdersController < ApplicationController
     render json: { error: e.message }, status: :unprocessable_entity
   end
 
-  def hold
-    authorize! :update, order
-    order.update!(hold_name: params[:hold_name], status: :draft)
-    render json: order_with_items_json(order)
-  end
 
-  def resume
-    authorize! :read, Order
-    held_orders = current_tenant.orders.where(status: :draft).where.not(hold_name: nil).order(updated_at: :desc)
-    render json: held_orders.as_json(include: [:dining_table, :customer])
-  end
 
   def pay
     authorize! :pay, order

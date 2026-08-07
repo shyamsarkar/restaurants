@@ -475,20 +475,6 @@ export const sendKot = async (id: number) => {
   });
 };
 
-export const holdOrder = async (id: number, holdName: string) => {
-  return apiClient<Order>({
-    method: "post",
-    url: `/api/v1/orders/${id}/hold`,
-    data: { hold_name: holdName },
-  });
-};
-
-export const resumeOrders = async () => {
-  return apiClient<Order[]>({
-    method: "get",
-    url: "/api/v1/orders/resume",
-  });
-};
 
 export const payOrder = async (
   id: number,

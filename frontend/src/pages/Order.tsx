@@ -37,6 +37,7 @@ import {
   getDiningTables,
   getProducts,
   getCategories,
+  getOrder,
   getOrderItemsByDiningTable,
   addOrderItem,
   deleteOrderItem,
@@ -46,8 +47,6 @@ import {
   updateOrder,
   getOrders,
   sendKot,
-  holdOrder,
-  resumeOrders,
   payOrder,
   cancelOrder,
   searchCustomerByPhone,
@@ -107,11 +106,7 @@ export const OrderPage = () => {
   const [newCustName, setNewCustName] = useState("");
   const [newCustEmail, setNewCustEmail] = useState("");
 
-  // Hold / Resume
-  const [openHoldDialog, setOpenHoldDialog] = useState(false);
-  const [holdName, setHoldName] = useState("");
-  const [openResumeDialog, setOpenResumeDialog] = useState(false);
-  const [heldOrders, setHeldOrders] = useState<Order[]>([]);
+
 
   // Item Cancellation
   const [openCancelItemDialog, setOpenCancelItemDialog] = useState(false);
@@ -265,55 +260,7 @@ export const OrderPage = () => {
     }
   };
 
-  const handleHoldOrder = async () => {
-    if (!currentOrder || !holdName) return;
-    try {
-      await holdOrder(currentOrder.id, holdName);
-      showToast("Order placed on hold.", "success");
-      setOpenHoldDialog(false);
-      setHoldName("");
-      // Reset state
-      setSelectedTable(null);
-      setCurrentOrder(null);
-      setSelectedCustomer(null);
-      setCustomerPhone("");
-      loadInitialData();
-    } catch (error) {
-      console.error(error);
-      showToast("Failed to hold order.", "error");
-    }
-  };
 
-  const handleShowResume = async () => {
-    try {
-      const held = await resumeOrders();
-      setHeldOrders(held);
-      setOpenResumeDialog(true);
-    } catch (error) {
-      console.error(error);
-      showToast("Failed to fetch held orders.", "error");
-    }
-  };
-
-  const handleResumeOrder = async (held: Order) => {
-    setOpenResumeDialog(false);
-    setSelectedCustomer(held.customer || null);
-    setCustomerPhone(held.customer?.phone || "");
-    
-    if (held.dining_table_id) {
-      const matchedTable = tables.find((t) => t.id === held.dining_table_id) || null;
-      setSelectedTable(matchedTable);
-    }
-    
-    try {
-      const orderData = await getOrder(held.id);
-      setCurrentOrder(orderData);
-      showToast(`Resumed draft order for ${held.hold_name || "customer"}`, "success");
-    } catch (error) {
-      console.error(error);
-      showToast("Failed to resume held order.", "error");
-    }
-  };
 
   const handleCancelEntireOrder = async () => {
     if (!currentOrder) return;
@@ -417,23 +364,24 @@ export const OrderPage = () => {
   });
 
   return (
-    <Box className="h-full flex flex-col p-4 bg-slate-100">
+    <Box 
+      className="flex flex-col p-4 bg-slate-100"
+      style={{ 
+        height: 'calc(100vh - 40px)', 
+        maxHeight: 'calc(100vh - 40px)', 
+        overflow: 'hidden'
+      }}
+    >
       {/* Top action buttons */}
       <Box className="flex justify-between items-center mb-4">
         <Typography variant="h5" className="font-bold text-slate-800">
           Billing POS Screen
         </Typography>
         <Box className="flex gap-2">
-          <Button variant="outlined" color="primary" startIcon={<PlayArrow />} onClick={handleShowResume}>
-            Resume Held
-          </Button>
           {currentOrder && (
             <>
               <Button variant="outlined" color="secondary" onClick={handleExitPOS}>
                 Back
-              </Button>
-              <Button variant="outlined" color="warning" startIcon={<Pause />} onClick={() => setOpenHoldDialog(true)}>
-                Hold Bill
               </Button>
               <Button
                 variant="outlined"
@@ -450,9 +398,9 @@ export const OrderPage = () => {
 
       {/* Main Grid: Tables vs POS View */}
       {!currentOrder ? (
-        <Box className="flex-1 flex flex-col">
+        <Box className="flex-1 flex flex-col overflow-hidden">
           {/* Tabs for Order Type Selection */}
-          <Box className="flex gap-2 mb-4 border-b border-slate-200 pb-2">
+          <Box className="flex gap-2 mb-4 border-b border-slate-200 pb-2 flex-shrink-0">
             <Button
               variant={orderType === "dine_in" ? "contained" : "outlined"}
               onClick={() => setOrderType("dine_in")}
@@ -471,7 +419,7 @@ export const OrderPage = () => {
           </Box>
 
           {orderType === "dine_in" ? (
-            <>
+            <Box className="flex-1 overflow-y-auto pr-1">
               <Typography variant="h6" className="font-semibold text-slate-700 mb-3">
                 Select a Table to start billing:
               </Typography>
@@ -506,9 +454,9 @@ export const OrderPage = () => {
                   </Grid>
                 ))}
               </Grid>
-            </>
+            </Box>
           ) : (
-            <>
+            <Box className="flex-1 overflow-y-auto pr-1">
               <Box className="flex justify-between items-center mb-3">
                 <Typography variant="h6" className="font-semibold text-slate-700">
                   Active Takeaway Orders:
@@ -562,19 +510,19 @@ export const OrderPage = () => {
                   ))}
                 </Grid>
               )}
-            </>
+            </Box>
           )}
         </Box>
       ) : (
-        <Grid container spacing={3} className="flex-1 overflow-hidden h-full">
+        <Grid container spacing={3} className="flex-1 overflow-hidden min-h-0" wrap="nowrap">
           {/* Left Panel: Category Tabs & Product Grid */}
-          <Grid item xs={12} md={7} className="flex flex-col h-full overflow-hidden">
-            <Paper variant="outlined" className="p-3 mb-3 flex gap-2 overflow-x-auto shadow-sm">
+          <Grid item xs={12} md={7} className="flex flex-col min-h-0 overflow-hidden" style={{ minWidth: 0 }}>
+            <Paper variant="outlined" className="p-3 mb-3 flex gap-2 overflow-x-auto shadow-sm flex-shrink-0">
               <Chip
                 label="All Categories"
                 color={selectedCategory === null ? "primary" : "default"}
                 onClick={() => setSelectedCategory(null)}
-                className="cursor-pointer font-medium"
+                className="cursor-pointer font-medium shrink-0"
               />
               {categories.map((c) => (
                 <Chip
@@ -582,7 +530,7 @@ export const OrderPage = () => {
                   label={c.name}
                   color={selectedCategory === c.id ? "primary" : "default"}
                   onClick={() => setSelectedCategory(c.id)}
-                  className="cursor-pointer font-medium"
+                  className="cursor-pointer font-medium shrink-0"
                 />
               ))}
             </Paper>
@@ -639,7 +587,7 @@ export const OrderPage = () => {
           </Grid>
 
           {/* Right Panel: Cart & Calculations */}
-          <Grid item xs={12} md={5} className="flex flex-col h-full overflow-hidden">
+          <Grid item xs={12} md={5} className="flex flex-col min-h-0 overflow-hidden" style={{ minWidth: 0 }}>
             <Paper variant="outlined" className="p-4 flex flex-col h-full bg-white shadow-md border-l-4 border-l-blue-600">
               <Box className="flex justify-between items-center mb-3">
                 <Typography variant="h6" className="font-bold text-slate-900 flex items-center gap-2">
@@ -680,28 +628,28 @@ export const OrderPage = () => {
               <Divider className="mb-3" />
 
               {/* Cart Items list */}
-              <Box className="flex-1 overflow-y-auto mb-3">
+              <Box className="flex-1 w-full overflow-y-auto overflow-x-hidden mb-3 pr-1">
                 {currentOrder && currentOrder.order_items.length === 0 ? (
                   <Typography className="text-center text-slate-400 mt-12 font-medium">
                     Cart is empty. Select items from the menu.
                   </Typography>
                 ) : (
                   currentOrder?.order_items.map((item) => (
-                    <Box key={item.id} className="py-2.5 border-b border-slate-100 flex items-center justify-between">
-                      <Box className="flex-1 pr-2">
-                        <Box className="flex items-center gap-2">
-                          <Typography variant="body2" className="font-bold text-slate-800">
+                    <Box key={item.id} className="py-2 border-b border-slate-100 flex items-center justify-between min-w-0">
+                      <Box className="flex-1 pr-2 min-w-0">
+                        <Box className="flex items-center gap-1.5 min-w-0">
+                          <Typography variant="body2" className="font-bold text-slate-800 truncate">
                             {item.name}
                           </Typography>
                           {item.kot_id && (
-                            <Chip size="small" label="KITCHEN" color="success" className="h-4 text-[9px]" />
+                            <Chip size="small" label="KITCHEN" color="success" className="h-4 text-[9px] shrink-0" />
                           )}
                         </Box>
-                        <Typography variant="caption" className="text-slate-500">
+                        <Typography variant="caption" className="text-slate-400 block mt-0.5">
                           ₹{Number(item.price).toFixed(2)} | GST {item.gst_rate}%
                         </Typography>
                       </Box>
-                      <Box className="flex items-center gap-1.5">
+                      <Box className="flex items-center gap-1.5 flex-shrink-0">
                         <IconButton
                           size="small"
                           color="error"
@@ -728,60 +676,73 @@ export const OrderPage = () => {
 
               {/* Subtotal, tax, discounts, total */}
               {currentOrder && (
-                <Box className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-sm">
-                  <Box className="flex justify-between py-1">
-                    <Typography className="text-slate-600">Subtotal</Typography>
-                    <Typography className="font-bold text-slate-800">
-                      ₹{Number(currentOrder.subtotal).toFixed(2)}
-                    </Typography>
+                <Box className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-sm flex-shrink-0">
+                  <Box className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                    <Box className="flex justify-between items-center">
+                      <Typography className="text-slate-600 text-xs">Subtotal</Typography>
+                      <Typography className="font-bold text-slate-800 text-xs">
+                        ₹{Number(currentOrder.subtotal).toFixed(2)}
+                      </Typography>
+                    </Box>
+                    <Box className="flex justify-between items-center">
+                      <Typography className="text-slate-600 text-xs">GST Taxes</Typography>
+                      <Typography className="font-bold text-slate-800 text-xs">
+                        ₹{Number(currentOrder.tax).toFixed(2)}
+                      </Typography>
+                    </Box>
+
+                    <Box className="flex justify-between items-center">
+                      <Typography className="text-slate-600 text-xs">Discount (%)</Typography>
+                      <TextField
+                        type="number"
+                        size="small"
+                        style={{ width: 52 }}
+                        inputProps={{ 
+                          min: 0, 
+                          max: 100, 
+                          style: { padding: '4px 6px', fontSize: '12px', textAlign: 'center' } 
+                        }}
+                        value={discountPct}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setDiscountPct(val);
+                          updateOrder(currentOrder.id, { discount: val })
+                            .then((updated) => setCurrentOrder(updated));
+                        }}
+                      />
+                    </Box>
+
+                    <Box className="flex justify-between items-center">
+                      <Typography className="text-slate-600 text-xs">Service (%)</Typography>
+                      <TextField
+                        type="number"
+                        size="small"
+                        style={{ width: 52 }}
+                        inputProps={{ 
+                          min: 0, 
+                          style: { padding: '4px 6px', fontSize: '12px', textAlign: 'center' } 
+                        }}
+                        value={serviceChargePct}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setServiceChargePct(val);
+                          updateOrder(currentOrder.id, { service_charge: val })
+                            .then((updated) => setCurrentOrder(updated));
+                        }}
+                      />
+                    </Box>
+
+                    <Box className="flex justify-between items-center col-span-2 text-slate-500 italic">
+                      <Typography variant="caption" className="text-[10px]">Round-off</Typography>
+                      <Typography variant="caption" className="text-[10px]">₹{Number(currentOrder.round_off).toFixed(2)}</Typography>
+                    </Box>
                   </Box>
-                  <Box className="flex justify-between py-1 items-center">
-                    <Typography className="text-slate-600">Discount (%)</Typography>
-                    <TextField
-                      type="number"
-                      size="small"
-                      style={{ width: 60 }}
-                      inputProps={{ min: 0, max: 100 }}
-                      value={discountPct}
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        setDiscountPct(val);
-                        // Make PATCH update to order config
-                        updateOrder(currentOrder.id, { discount: val })
-                          .then((updated) => setCurrentOrder(updated));
-                      }}
-                    />
-                  </Box>
-                  <Box className="flex justify-between py-1 items-center">
-                    <Typography className="text-slate-600">Service Charge (%)</Typography>
-                    <TextField
-                      type="number"
-                      size="small"
-                      style={{ width: 60 }}
-                      inputProps={{ min: 0 }}
-                      value={serviceChargePct}
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        setServiceChargePct(val);
-                        updateOrder(currentOrder.id, { service_charge: val })
-                          .then((updated) => setCurrentOrder(updated));
-                      }}
-                    />
-                  </Box>
-                  <Box className="flex justify-between py-1">
-                    <Typography className="text-slate-600">GST (Taxes)</Typography>
-                    <Typography className="font-bold text-slate-800">
-                      ₹{Number(currentOrder.tax).toFixed(2)}
-                    </Typography>
-                  </Box>
-                  <Box className="flex justify-between py-1 text-slate-500 italic">
-                    <Typography variant="caption">Round-off</Typography>
-                    <Typography variant="caption">₹{Number(currentOrder.round_off).toFixed(2)}</Typography>
-                  </Box>
-                  <Divider className="my-2" />
-                  <Box className="flex justify-between py-1 text-base font-bold text-slate-900">
-                    <Typography>Final Total</Typography>
-                    <Typography className="text-blue-600">₹{currentOrder.total}</Typography>
+
+                  <Divider className="my-1.5" />
+
+                  <Box className="flex justify-between items-center text-sm font-bold text-slate-900">
+                    <Typography className="text-xs">Final Total</Typography>
+                    <Typography className="text-blue-600 text-sm">₹{currentOrder.total}</Typography>
                   </Box>
                 </Box>
               )}
@@ -812,63 +773,7 @@ export const OrderPage = () => {
         </Grid>
       )}
 
-      {/* Hold Order Dialog */}
-      <Dialog open={openHoldDialog} onClose={() => setOpenHoldDialog(false)}>
-        <DialogTitle className="font-bold text-slate-800">Hold Active Order</DialogTitle>
-        <DialogContent className="py-2">
-          <TextField
-            label="Hold Name / Label"
-            variant="outlined"
-            size="small"
-            fullWidth
-            className="mt-2"
-            value={holdName}
-            onChange={(e) => setHoldName(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenHoldDialog(false)}>Cancel</Button>
-          <Button onClick={handleHoldOrder} color="warning" variant="contained">
-            Hold Order
-          </Button>
-        </DialogActions>
-      </Dialog>
 
-      {/* Resume Held Bills Dialog */}
-      <Dialog open={openResumeDialog} onClose={() => setOpenResumeDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle className="font-bold text-slate-800">Resume Held Bills</DialogTitle>
-        <DialogContent className="py-2">
-          <Box className="flex flex-col gap-2 mt-2">
-            {heldOrders.length === 0 ? (
-              <Typography className="text-slate-500 italic text-center p-6">
-                No orders currently held on draft.
-              </Typography>
-            ) : (
-              heldOrders.map((h) => (
-                <Paper
-                  key={h.id}
-                  variant="outlined"
-                  className="p-3 flex justify-between items-center hover:bg-slate-50 cursor-pointer"
-                  onClick={() => handleResumeOrder(h)}
-                >
-                  <Box>
-                    <Typography className="font-bold text-slate-800">
-                      {h.hold_name || `Order #${h.id}`}
-                    </Typography>
-                    <Typography variant="caption" className="text-slate-500">
-                      Table: {h.dining_table?.name || "None"} | Items: {h.order_items?.length || 0}
-                    </Typography>
-                  </Box>
-                  <Typography className="font-bold text-blue-600">₹{h.total}</Typography>
-                </Paper>
-              ))
-            )}
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenResumeDialog(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Cancel Sent Item Dialog */}
       <Dialog open={openCancelItemDialog} onClose={() => setOpenCancelItemDialog(false)}>

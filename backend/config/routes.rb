@@ -37,12 +37,8 @@ Rails.application.routes.draw do
       resources :orders, only: %i[index show create update] do
         member do
           post :kot
-          post :hold
           post :pay
           post :cancel
-        end
-        collection do
-          get :resume
         end
       end
 
