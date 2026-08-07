@@ -2,6 +2,7 @@ module Api
   module V1
     class UsersController < ApplicationController
       before_action :set_user, only: %i[show update destroy]
+      skip_before_action :set_current_context, only: [:update_password]
 
       def index
         authorize! :read, User
@@ -21,6 +22,7 @@ module Api
       def create
         authorize! :create, User
         user = User.new(create_user_params)
+        user.must_change_password = true
         role = role_param
 
         ActiveRecord::Base.transaction do
@@ -126,9 +128,44 @@ module Api
           last_name: user.last_name,
           is_active: user.is_active,
           role: membership&.role,
+          must_change_password: user.must_change_password,
           created_at: user.created_at,
           updated_at: user.updated_at
         }
+      end
+
+      # PATCH /api/v1/users/password
+      def update_password
+        user = current_user
+        
+        unless user.valid_password?(params[:current_password])
+          render json: { error: "Current password is incorrect" }, status: :unprocessable_entity
+          return
+        end
+
+        new_password = params[:new_password]
+        confirm_password = params[:confirm_password]
+
+        if new_password.blank?
+          render json: { error: "New password cannot be blank" }, status: :unprocessable_entity
+          return
+        end
+
+        if new_password != confirm_password
+          render json: { error: "New password and confirmation do not match" }, status: :unprocessable_entity
+          return
+        end
+
+        user.password = new_password
+        user.password_confirmation = confirm_password
+        user.must_change_password = false
+
+        if user.save
+          bypass_sign_in(user) if respond_to?(:bypass_sign_in)
+          render json: { message: "Password updated successfully" }, status: :ok
+        else
+          render json: { errors: user.errors.full_messages }, status: :unprocessable_entity
+        end
       end
     end
   end

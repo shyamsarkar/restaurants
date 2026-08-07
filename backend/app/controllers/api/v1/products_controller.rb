@@ -3,12 +3,12 @@
 class Api::V1::ProductsController < ApplicationController
   def index
     authorize! :read, Product
-    render json: current_tenant.products.order(:id).as_json(include: :inventory)
+    render json: current_tenant.products.order(:id).as_json
   end
 
   def show
     authorize! :read, product
-    render json: product.as_json(include: :inventory)
+    render json: product.as_json
   end
 
   def create
@@ -16,7 +16,7 @@ class Api::V1::ProductsController < ApplicationController
     tenant_product = current_tenant.products.new(product_params)
 
     if tenant_product.save
-      render json: tenant_product.as_json(include: :inventory), status: :created
+      render json: tenant_product.as_json, status: :created
     else
       render json: { errors: tenant_product.errors.full_messages }, status: :unprocessable_entity
     end
@@ -25,7 +25,7 @@ class Api::V1::ProductsController < ApplicationController
   def update
     authorize! :update, product
     if product.update(product_params)
-      render json: product.as_json(include: :inventory)
+      render json: product.as_json
     else
       render json: { errors: product.errors.full_messages }, status: :unprocessable_entity
     end
@@ -49,9 +49,9 @@ class Api::V1::ProductsController < ApplicationController
 
   def product_params
     permitted = if params[:product].present?
-                  params.require(:product).permit(:name, :price, :gst_rate, :image_path, :is_available, :category_id)
+                  params.require(:product).permit(:name, :price, :gst_rate, :image_path, :is_available, :category_id, :is_veg)
                 else
-                  params.permit(:name, :price, :gst_rate, :image_path, :is_available, :category_id)
+                  params.permit(:name, :price, :gst_rate, :image_path, :is_available, :category_id, :is_veg)
                 end
 
     if permitted[:category_id].present? && !current_tenant.categories.exists?(id: permitted[:category_id])

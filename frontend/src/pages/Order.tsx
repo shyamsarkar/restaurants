@@ -555,26 +555,31 @@ export const OrderPage = () => {
             <Box className="flex-1 overflow-y-auto pr-1">
               <Grid container spacing={2}>
                 {filteredProducts.map((p) => {
-                  const stock = p.inventory?.stock_qty ?? 0;
-                  const isLow = stock <= (p.inventory?.low_stock_threshold ?? 5);
                   return (
                     <Grid item xs={6} sm={4} key={p.id}>
                       <Card
                         variant="outlined"
                         onClick={() => handleAddProduct(p)}
-                        className={`cursor-pointer hover:border-blue-400 transition-all duration-200 ${
-                          stock <= 0 ? "opacity-60 bg-slate-50" : "bg-white"
-                        }`}
+                        className="cursor-pointer hover:border-blue-400 transition-all duration-200 bg-white"
                       >
                         <CardContent className="p-3 relative">
-                          <Typography variant="body1" className="font-bold text-slate-800 truncate">
-                            {p.name}
-                          </Typography>
+                          <Box className="flex items-center gap-1.5 min-w-0">
+                            <span style={{
+                              width: '8px',
+                              height: '8px',
+                              borderRadius: '50%',
+                              backgroundColor: p.is_veg ? '#2e7d32' : '#d32f2f',
+                              display: 'inline-block',
+                              flexShrink: 0
+                            }} />
+                            <Typography variant="body1" className="font-bold text-slate-800 truncate">
+                              {p.name}
+                            </Typography>
+                          </Box>
                           <Typography variant="body2" className="text-slate-600 mt-1 font-semibold">
                             ₹{Number(p.price).toFixed(2)}
                           </Typography>
                           <Box className="mt-3 flex justify-between items-center">
-                            <Chip size="small" label={`Stock: ${stock}`} color={isLow ? "error" : "success"} />
                             <Chip size="small" label={`${p.gst_rate}% GST`} variant="outlined" />
                           </Box>
                         </CardContent>

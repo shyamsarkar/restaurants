@@ -43,11 +43,11 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => {
   };
 
   const gotoSettings = () => {
-    navigate('restaurants/settings');
+    navigate('/settings');
   };
 
   const gotoNotification = () => {
-    navigate('restaurants/notification');
+    navigate('/notification');
   };
 
   const menuItems = [

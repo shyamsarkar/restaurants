@@ -78,14 +78,6 @@ class Api::V1::OrdersController < ApplicationController
 
     OrderService.complete_payment!(order, mode, discount_pct, service_charge_pct, notes)
     
-    AuditLog.create!(
-      tenant_id: current_tenant.id,
-      username: current_user.email,
-      action: "Completed checkout for Order ##{order.id}. Mode: #{mode.to_s.upcase}. Total: #{order.total}",
-      target_type: "Order",
-      target_id: order.id,
-      details: "Payment completed successfully."
-    )
     render json: order_with_items_json(order)
   rescue StandardError => e
     render json: { error: e.message }, status: :unprocessable_entity
@@ -96,14 +88,6 @@ class Api::V1::OrdersController < ApplicationController
     reason = params[:reason] || "User requested cancel"
     OrderService.cancel_order!(order, reason, current_user.email)
     
-    AuditLog.create!(
-      tenant_id: current_tenant.id,
-      username: current_user.email,
-      action: "Cancelled Order ##{order.id}",
-      target_type: "Order",
-      target_id: order.id,
-      details: "Reason: #{reason}"
-    )
     render json: order_with_items_json(order)
   rescue StandardError => e
     render json: { error: e.message }, status: :unprocessable_entity

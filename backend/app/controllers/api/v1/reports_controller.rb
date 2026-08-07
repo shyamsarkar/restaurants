@@ -2,8 +2,8 @@
 
 class Api::V1::ReportsController < ApplicationController
   def index
-    # Only managers, admins, and owners can manage AuditLog and view reports
-    authorize! :manage, AuditLog
+    # Only managers, admins, and owners can view reports
+    authorize! :read, :report
 
     start_date = params[:start_date] ? Time.zone.parse(params[:start_date]).beginning_of_day : 30.days.ago.beginning_of_day
     end_date = params[:end_date] ? Time.zone.parse(params[:end_date]).end_of_day : Time.current.end_of_day

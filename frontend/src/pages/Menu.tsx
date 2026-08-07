@@ -52,6 +52,7 @@ export const MenuEditor = () => {
   const [productGst, setProductGst] = useState(5.0);
   const [productCatId, setProductCatId] = useState<number | "">("");
   const [productAvailable, setProductAvailable] = useState(true);
+  const [productIsVeg, setProductIsVeg] = useState(true);
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
 
   const { showToast } = useToast();
@@ -105,6 +106,7 @@ export const MenuEditor = () => {
         gst_rate: Number(productGst),
         category_id: Number(productCatId),
         is_available: productAvailable,
+        is_veg: productIsVeg,
       };
 
       if (editingProductId !== null) {
@@ -152,6 +154,7 @@ export const MenuEditor = () => {
     setProductGst(5.0);
     setProductCatId("");
     setProductAvailable(true);
+    setProductIsVeg(true);
     setEditingProductId(null);
   };
 
@@ -342,6 +345,16 @@ export const MenuEditor = () => {
                     }
                     label="Available for Billing"
                   />
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={productIsVeg}
+                        onChange={(e) => setProductIsVeg(e.target.checked)}
+                        color="success"
+                      />
+                    }
+                    label={productIsVeg ? "Vegetarian (Veg)" : "Non-Vegetarian"}
+                  />
                   <Box className="flex gap-2">
                     <Button type="submit" variant="contained" color="primary" fullWidth>
                       {editingProductId ? "Update" : "Save"}
@@ -410,6 +423,7 @@ export const MenuEditor = () => {
                                 setProductGst(prod.gst_rate);
                                 setProductCatId(prod.category_id);
                                 setProductAvailable(prod.is_available);
+                                setProductIsVeg(prod.is_veg ?? true);
                               }}
                             >
                               <Edit className="w-4 h-4" />

@@ -4,7 +4,9 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 export interface AuthUser {
   id: number;
   email: string;
-  name: string;
+  first_name?: string;
+  last_name?: string;
+  must_change_password?: boolean;
 }
 
 interface AuthState {

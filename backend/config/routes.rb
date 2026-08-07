@@ -1,10 +1,6 @@
 # frozen_string_literal: true
 
-require 'sidekiq/web'
-
 Rails.application.routes.draw do
-  mount Sidekiq::Web => '/sidekiq'
-
   devise_for :users,
              controllers: {
                sessions: 'api/v1/users/sessions'
@@ -13,13 +9,19 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
-      resources :tenants, only: %i[index show create update destroy]
+      resources :tenants, except: [:destroy] do
+        member do
+          post :activate
+          post :deactivate
+        end
+      end
+      delete "/tenants/:id", to: "tenants#destroy"
       resources :users, only: %i[index show create update destroy]
+      patch "/users/password", to: "users#update_password"
       resources :categories
       resources :products
       resources :customers
       resources :restaurant_infos, only: %i[show update]
-      resources :audit_logs, only: %i[index]
 
       resources :dining_tables do
         member do
@@ -43,13 +45,6 @@ Rails.application.routes.draw do
       end
 
       resources :kots, only: %i[index update]
-
-      resources :inventories, only: %i[index update] do
-        collection do
-          post :purchase
-          get :history
-        end
-      end
 
       resources :reports, only: %i[index]
     end

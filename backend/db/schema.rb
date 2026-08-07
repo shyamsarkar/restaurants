@@ -10,21 +10,9 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_31_133243) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_01_000013) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
-
-  create_table "audit_logs", force: :cascade do |t|
-    t.bigint "tenant_id", null: false
-    t.string "username"
-    t.string "action"
-    t.string "target_type"
-    t.integer "target_id"
-    t.text "details"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["tenant_id"], name: "index_audit_logs_on_tenant_id"
-  end
 
   create_table "categories", force: :cascade do |t|
     t.string "name", null: false
@@ -59,15 +47,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_31_133243) do
     t.bigint "current_order_id"
     t.index ["tenant_id", "name"], name: "index_dining_tables_on_tenant_id_and_name", unique: true
     t.index ["tenant_id"], name: "index_dining_tables_on_tenant_id"
-  end
-
-  create_table "inventories", primary_key: "product_id", force: :cascade do |t|
-    t.bigint "tenant_id", null: false
-    t.integer "stock_qty", default: 0, null: false
-    t.integer "low_stock_threshold", default: 5, null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["tenant_id"], name: "index_inventories_on_tenant_id"
   end
 
   create_table "kot_items", force: :cascade do |t|
@@ -171,6 +150,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_31_133243) do
     t.string "unit", null: false
     t.string "description"
     t.boolean "is_available", default: true, null: false
+    t.boolean "is_veg", default: true, null: false
     t.bigint "category_id", null: false
     t.bigint "tenant_id", null: false
     t.datetime "created_at", null: false
@@ -181,19 +161,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_31_133243) do
     t.index ["category_id"], name: "index_products_on_category_id"
     t.index ["tenant_id", "name"], name: "index_products_on_tenant_id_and_name", unique: true
     t.index ["tenant_id"], name: "index_products_on_tenant_id"
-  end
-
-  create_table "purchase_histories", force: :cascade do |t|
-    t.bigint "tenant_id", null: false
-    t.bigint "product_id", null: false
-    t.integer "quantity", null: false
-    t.string "supplier"
-    t.decimal "unit_price", precision: 10, scale: 2, null: false
-    t.datetime "date", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["product_id"], name: "index_purchase_histories_on_product_id"
-    t.index ["tenant_id"], name: "index_purchase_histories_on_tenant_id"
   end
 
   create_table "restaurant_infos", force: :cascade do |t|
@@ -226,6 +193,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_31_133243) do
     t.string "first_name"
     t.string "last_name"
     t.boolean "is_active", default: true, null: false
+    t.boolean "must_change_password", default: false, null: false
     t.datetime "last_login_time"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -233,13 +201,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_31_133243) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
-  add_foreign_key "audit_logs", "tenants"
   add_foreign_key "categories", "tenants"
   add_foreign_key "customers", "tenants"
   add_foreign_key "dining_tables", "dining_tables", column: "merged_into_id"
   add_foreign_key "dining_tables", "tenants"
-  add_foreign_key "inventories", "products"
-  add_foreign_key "inventories", "tenants"
   add_foreign_key "kot_items", "kots"
   add_foreign_key "kot_items", "products"
   add_foreign_key "kot_items", "tenants"
@@ -252,16 +217,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_31_133243) do
   add_foreign_key "order_items", "kots"
   add_foreign_key "order_items", "orders"
   add_foreign_key "order_items", "products"
-  add_foreign_key "order_items", "products"
   add_foreign_key "order_items", "tenants"
   add_foreign_key "orders", "customers"
   add_foreign_key "orders", "dining_tables"
   add_foreign_key "orders", "tenants"
   add_foreign_key "orders", "users"
   add_foreign_key "products", "categories"
-  add_foreign_key "products", "categories"
   add_foreign_key "products", "tenants"
-  add_foreign_key "purchase_histories", "products"
-  add_foreign_key "purchase_histories", "tenants"
   add_foreign_key "restaurant_infos", "tenants"
 end

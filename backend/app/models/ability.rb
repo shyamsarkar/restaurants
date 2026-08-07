@@ -10,8 +10,12 @@ class Ability
     return unless membership
 
     case membership.role.to_sym
-    when :owner, :admin
+    when :owner
       can :manage, :all
+    when :admin
+      can :manage, :all
+      cannot [:create, :update, :destroy, :activate, :deactivate], Tenant
+      can :read, Tenant
     when :manager
       can :manage, Category
       can :manage, Product
@@ -20,9 +24,10 @@ class Ability
       can :manage, OrderItem
       can :manage, Kot
       can :manage, Customer
-      can :manage, AuditLog
       can :manage, RestaurantInfo
       can :read, User
+      can :read, :report
+      can :read, Tenant, id: membership.tenant_id
     when :cashier
       can :read, Category
       can :read, Product
@@ -32,9 +37,9 @@ class Ability
       can :manage, OrderItem
       can :manage, Kot
       can :manage, Customer
-      can :read, AuditLog
       can :read, RestaurantInfo
       can :read, User
+      can :read, Tenant, id: membership.tenant_id
     when :waiter
       can :read, Category
       can :read, Product
@@ -48,6 +53,7 @@ class Ability
       can :manage, Kot
       can :manage, Customer
       can :read, User
+      can :read, Tenant, id: membership.tenant_id
     end
   end
 end

@@ -205,7 +205,7 @@ const Users: React.FC = () => {
             </select>
             <input
               type="password"
-              placeholder={editingId === null ? "Password" : "New password (optional)"}
+              placeholder={editingId === null ? "Temporary Password" : "New password (optional)"}
               value={form.password}
               onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -236,6 +236,12 @@ const Users: React.FC = () => {
               <span className="text-sm text-gray-700">Active</span>
             </label>
           </div>
+
+          {editingId === null && (
+            <p className="text-xs text-gray-500">
+              * User will be required to change password on first login
+            </p>
+          )}
 
           <div className="flex items-center gap-3">
             <button
@@ -335,7 +341,14 @@ const Users: React.FC = () => {
                     <tr key={user.id} className="hover:bg-gray-50 transition-colors duration-200">
                       <td className="py-4 px-6">
                         <div>
-                          <div className="font-medium text-gray-900">{fullName}</div>
+                          <div className="font-medium text-gray-900 flex items-center gap-2">
+                            {fullName}
+                            {user.must_change_password && (
+                              <span className="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded bg-yellow-100 text-yellow-800">
+                                Password change pending
+                              </span>
+                            )}
+                          </div>
                           <div className="text-sm text-gray-500">{user.email}</div>
                         </div>
                       </td>

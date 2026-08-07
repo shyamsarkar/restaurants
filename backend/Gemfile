@@ -10,7 +10,6 @@ gem 'puma', '>= 6.0'
 gem 'rack-cors'
 gem 'rails', '~> 8.0.4'
 gem 'redis'
-gem 'sidekiq'
 gem 'tzinfo-data', platforms: %i[windows jruby]
 
 # Authentication & Authorization

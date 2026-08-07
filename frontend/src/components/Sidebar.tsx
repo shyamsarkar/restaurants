@@ -7,7 +7,6 @@ import {
   TableRestaurant, 
   Kitchen as KitchenIcon, 
   MenuBook, 
-  Inventory as InventoryIcon, 
   PeopleAlt, 
   BarChart, 
   Settings as SettingsIcon,
@@ -19,14 +18,14 @@ import {
 import ProfileDropdown from './ProfileDropdown';
 import { useCommonStore } from '@/stores/common.store';
 
-const basePath = '/restaurants';
+const basePath = '';
 
 const menuItems = [
+  { icon: Home, label: 'Dashboard', path: '/' },
   { icon: ShoppingCart, label: 'Billing POS', path: `${basePath}/orders` },
   { icon: TableRestaurant, label: 'Tables', path: `${basePath}/tables` },
   { icon: KitchenIcon, label: 'Kitchen View', path: `${basePath}/kitchen` },
   { icon: MenuBook, label: 'Menu Editor', path: `${basePath}/menu` },
-  { icon: InventoryIcon, label: 'Inventory', path: `${basePath}/inventory` },
   { icon: PeopleAlt, label: 'Customers', path: `${basePath}/customers` },
   { icon: BarChart, label: 'Reports', path: `${basePath}/reports` },
   { icon: SettingsIcon, label: 'Settings', path: `${basePath}/settings` },
@@ -39,7 +38,7 @@ const Sidebar: React.FC = () => {
   const navigate = useNavigate();
 
   const handleNavigate = () => {
-    navigate(basePath);
+    navigate('/');
   };
 
   return (

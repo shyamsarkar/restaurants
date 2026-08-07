@@ -6,9 +6,6 @@ class Tenant < ApplicationRecord
   has_many :products, dependent: :destroy
   has_many :customers, dependent: :destroy
   has_many :kots, dependent: :destroy
-  has_many :inventories, dependent: :destroy
-  has_many :purchase_histories, dependent: :destroy
-  has_many :audit_logs, dependent: :destroy
 
   has_many :memberships, dependent: :destroy
   has_many :dining_tables, dependent: :destroy

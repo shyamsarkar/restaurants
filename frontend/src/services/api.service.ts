@@ -16,6 +16,7 @@ export interface User {
   last_name: string | null;
   is_active: boolean;
   role: "owner" | "admin" | "manager" | "cashier" | "waiter" | null;
+  must_change_password?: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -65,24 +66,7 @@ export interface Product {
   image_path?: string;
   is_available: boolean;
   category_id: number;
-  inventory?: Inventory;
-}
-
-export interface Inventory {
-  product_id: number;
-  stock_qty: number;
-  low_stock_threshold: number;
-  product?: Product;
-}
-
-export interface PurchaseHistory {
-  id: number;
-  product_id: number;
-  quantity: number;
-  supplier: string;
-  unit_price: number;
-  date: string;
-  product?: Product;
+  is_veg: boolean;
 }
 
 export interface Customer {
@@ -157,17 +141,6 @@ export interface RestaurantInfo {
   email?: string;
   receipt_footer?: string;
 }
-
-export interface AuditLog {
-  id: number;
-  username: string;
-  action: string;
-  target_type?: string;
-  target_id?: number;
-  details?: string;
-  created_at: string;
-}
-
 export interface ReportData {
   metrics: {
     total_revenue: number;
@@ -201,12 +174,20 @@ export const apiClient = async <TResponse>({
 
 // Users
 export const loginUser = async (email: string, password: string) => {
-  return apiClient<{ user: AuthUser; tenant: { id: string; name: string } }>({
+  return apiClient<{ user: AuthUser; tenant?: { id: string; name: string }; must_change_password?: boolean; message?: string }>({
     method: "post",
     url: "/users/sign_in",
     data: {
       user: { email, password },
     },
+  });
+};
+
+export const changePassword = async (data: Record<string, string>) => {
+  return apiClient<{ message: string }>({
+    method: "patch",
+    url: "/api/v1/users/password",
+    data,
   });
 };
 
@@ -251,6 +232,14 @@ export const getTenants = async () => {
   return apiClient<{ id: string; name: string; role: string }[]>({
     method: "get",
     url: "/api/v1/tenants",
+  });
+};
+
+export const createTenant = async (data: { name: string }) => {
+  return apiClient<{ id: string; name: string; status: string }>({
+    method: "post",
+    url: "/api/v1/tenants",
+    data: { tenant: data },
   });
 };
 
@@ -511,42 +500,7 @@ export const updateKotStatus = async (id: number, status: string) => {
   });
 };
 
-// Inventories
-export const getInventories = async () => {
-  return apiClient<Inventory[]>({
-    method: "get",
-    url: "/api/v1/inventories",
-  });
-};
 
-export const updateInventory = async (productId: number, stockQty: number, lowStockThreshold: number) => {
-  return apiClient<Inventory>({
-    method: "patch",
-    url: `/api/v1/inventories/${productId}`,
-    data: { stock_qty: stockQty, low_stock_threshold: lowStockThreshold },
-  });
-};
-
-export const purchaseInventory = async (data: {
-  product_id: number;
-  quantity: number;
-  supplier: string;
-  unit_price: number;
-  date?: string;
-}) => {
-  return apiClient<Inventory>({
-    method: "post",
-    url: "/api/v1/inventories/purchase",
-    data,
-  });
-};
-
-export const getPurchaseHistory = async () => {
-  return apiClient<PurchaseHistory[]>({
-    method: "get",
-    url: "/api/v1/inventories/history",
-  });
-};
 
 // Customers
 export const searchCustomerByPhone = async (phone: string) => {
@@ -597,10 +551,3 @@ export const updateRestaurantInfo = async (data: Partial<RestaurantInfo>) => {
   });
 };
 
-// Audit Logs
-export const getAuditLogs = async () => {
-  return apiClient<AuditLog[]>({
-    method: "get",
-    url: "/api/v1/audit_logs",
-  });
-};
