@@ -57,8 +57,19 @@ class TenantSetupService
     { name: "Vanilla Ice Cream", price: 80.0, gst_rate: 5.0, is_veg: true, category: "Desserts" }
   ].freeze
 
+  TABLES = (1..10).map { |n| "Table #{n}" }.freeze
+
   def self.setup!(tenant)
     ActsAsTenant.with_tenant(tenant) do
+      setup_categories_and_products
+      setup_tables
+    end
+  end
+
+  class << self
+    private
+
+    def setup_categories_and_products
       categories = {}
       CATEGORIES.each do |cdata|
         categories[cdata[:name]] = Category.find_or_create_by!(name: cdata[:name]) do |c|
@@ -77,6 +88,12 @@ class TenantSetupService
           p.category = category
           p.unit = "plate"
         end
+      end
+    end
+
+    def setup_tables
+      TABLES.each do |tname|
+        DiningTable.find_or_create_by!(name: tname)
       end
     end
   end

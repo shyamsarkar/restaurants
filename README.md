@@ -3,7 +3,7 @@
 Multi-tenant restaurant billing system built with Ruby on Rails 8, ReactJS 19, and PostgreSQL 16.
 
 ## Tech Stack
-- **Backend**: Rails 8.0.4, Ruby 4.0.1, PostgreSQL 16.14, Redis
+- **Backend**: Rails 8.0.4, Ruby 4.0.1, PostgreSQL 16.14
 - **Frontend**: React 19.2.8, TypeScript, Vite 8.2.0, MUI 9.3.1, Tailwind CSS 4.3.3, Zustand 5.0.14
 - **Auth**: Devise (session cookie authentication)
 - **Multi-tenancy**: acts_as_tenant (row-level isolation via `tenant_id`)
@@ -12,7 +12,6 @@ Multi-tenant restaurant billing system built with Ruby on Rails 8, ReactJS 19, a
 ## Prerequisites
 - Ruby 4.0.1+
 - PostgreSQL 16+
-- Redis 7+
 - Node.js 20+ or Bun
 
 ## Setup — Backend
@@ -76,7 +75,7 @@ Multi-tenant restaurant billing system built with Ruby on Rails 8, ReactJS 19, a
 ### Owner Onboarding
 1. Run `db:seed` to initialize the global owner account.
 2. The owner logs in and selects or creates a tenant branch (POST `/api/v1/tenants`).
-3. Tenant creation triggers `TenantSetupService` to automatically seed 7 default menu categories and 43 products.
+3. Tenant creation triggers `TenantSetupService` to automatically seed 7 default menu categories, 43 products, and 10 default dining tables (Table 1 - Table 10).
 4. The owner creates additional staff users via the Users directory.
 
 ### Staff Onboarding
@@ -96,7 +95,6 @@ Multi-tenant restaurant billing system built with Ruby on Rails 8, ReactJS 19, a
 ### Backend (`backend/.env`)
 - `PORT` — Port number for the Rails server (defaults to `3000`).
 - `DB_HOST_PSQL`, `DB_USER_PSQL`, `DB_PASS_PSQL`, `DB_NAME_PSQL`, `DB_PORT_PSQL` — PostgreSQL connection credentials.
-- `REDIS_URL` — Connection string for Redis cache & Action Cable.
 - `CORS_ORIGINS` — Comma-separated list of allowed client host URLs (e.g. `http://localhost:5173`).
 - `DEFAULT_OWNER_EMAIL` / `DEFAULT_OWNER_PASSWORD` — Owner credentials loaded during database seeding.
 
