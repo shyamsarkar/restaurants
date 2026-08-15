@@ -1,9 +1,18 @@
+import { useEffect } from 'react';
 import { useLocation, Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '@/stores/auth.store';
 
 export const RequireAuth = ({ children }: { children?: JSX.Element }) => {
   const user = useAuthStore((state) => state.user);
+  const tenants = useAuthStore((state) => state.tenants);
+  const fetchTenants = useAuthStore((state) => state.fetchTenants);
   const location = useLocation();
+
+  useEffect(() => {
+    if (user && (!tenants || tenants.length === 0)) {
+      fetchTenants();
+    }
+  }, [user, tenants, fetchTenants]);
 
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;

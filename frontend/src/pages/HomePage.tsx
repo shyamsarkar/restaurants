@@ -14,6 +14,7 @@ interface Tenant {
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const setTenantId = useAuthStore((s) => s.setTenantId);
+  const setTenantsStore = useAuthStore((s) => s.setTenants);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,6 +27,7 @@ export const HomePage: React.FC = () => {
       setLoading(true);
       const data = await getTenants();
       setTenants(data);
+      setTenantsStore(data);
 
       const hasOwnerRole = data.some((t) => t.role === 'owner');
       if (!hasOwnerRole && data.length > 0) {

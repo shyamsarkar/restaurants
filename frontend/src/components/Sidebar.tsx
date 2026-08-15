@@ -16,6 +16,7 @@ import {
 } from '@mui/icons-material';
 
 import ProfileDropdown from './ProfileDropdown';
+import TenantSwitcher from './TenantSwitcher';
 import { useCommonStore } from '@/stores/common.store';
 
 const basePath = '';
@@ -63,6 +64,9 @@ const Sidebar: React.FC = () => {
           )}
         </button>
       </div>
+
+      {/* Tenant Switcher */}
+      <TenantSwitcher />
 
       {/* Navigation */}
       <nav className="mt-4 px-2">
