@@ -149,3 +149,26 @@ Multi-tenant restaurant billing system built with Ruby on Rails 8, ReactJS 19, a
 - **Testing**: No test suite is currently configured (RSpec + FactoryBot planned).
 - **Docker**: Dockerfile or compose files are not present.
 - **CI/CD**: Workflows or pipeline triggers are not present.
+
+## Completed Tasks & Feature Updates
+
+### 1. Tenant Admin User Creation (Owner Feature) — [Completed]
+- **Goal**: Enable tenant owners to add and manage `admin` users for their specific tenant branch.
+- **Details**: Updated backend authorization rules (`UsersController` & `Ability`) and frontend user management UI (`Users.tsx`) to allow tenant owners to create and assign `admin` users scoped to the active tenant.
+
+### 2. Admin User Management Permissions — [Completed]
+- **Goal**: Allow `admin` role users to create and manage lower-tier staff users (`manager`, `cashier`, `waiter`).
+- **Details**: Configured CanCanCan abilities and controller role hierarchy guards so `admin` users can manage staff directory members (`/api/v1/users`) while restricting non-owners from creating or mutating `owner` memberships.
+
+### 3. Sidebar User Profile & Branch Switcher Layout — [Completed]
+- **Goal**: Update the sidebar profile icon and reposition the "Change Branch" action.
+- **Details**:
+  - Replaced the hardcoded "System Operator" label on the sidebar login icon with dynamic logged-in user details (`User Name`, `Role`, and initials derived from `useAuthStore`).
+  - Positioned the `TenantSwitcher` cleanly in the top header section of the sidebar navigation.
+
+### 4. Billing POS Screen Category Layout & Cart Overflow Fix — [Completed]
+- **Goal**: Fix UI overflow issue on the POS Billing screen when multiple categories are added.
+- **Details**:
+  - Wrapped the category filter bar in a scrollable horizontal flex container (`overflow-x-auto`, `whiteSpace: 'nowrap'`) to handle any number of menu categories cleanly.
+  - Enforced rigid flex layout constraints on the left product grid and right Shopping Cart panel (`w-[360px] md:w-[400px] lg:w-[440px] flex-shrink-0`) so the cart stays pinned within viewport boundaries without being pushed off-screen.
+

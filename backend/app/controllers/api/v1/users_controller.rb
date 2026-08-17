@@ -21,9 +21,16 @@ module Api
 
       def create
         authorize! :create, User
+        role = role_param
+        current_membership = current_user.memberships.find_by(tenant: current_tenant)
+
+        if role == 'owner' && current_membership&.role != 'owner'
+          render json: { errors: ['Only owners can assign the owner role'] }, status: :forbidden
+          return
+        end
+
         user = User.new(create_user_params)
         user.must_change_password = true
-        role = role_param
 
         ActiveRecord::Base.transaction do
           user.save!
@@ -37,12 +44,23 @@ module Api
 
       def update
         authorize! :update, @user
+        current_membership = current_user.memberships.find_by(tenant: current_tenant)
+        target_membership = @user.memberships.find_by!(tenant_id: current_tenant.id)
+
+        if target_membership.role == 'owner' && current_membership&.role != 'owner'
+          render json: { errors: ['Only owners can modify an owner user'] }, status: :forbidden
+          return
+        end
+
+        if role_in_payload? && role_param == 'owner' && current_membership&.role != 'owner'
+          render json: { errors: ['Only owners can assign the owner role'] }, status: :forbidden
+          return
+        end
 
         ActiveRecord::Base.transaction do
           @user.update!(update_user_params)
 
-          membership = @user.memberships.find_by!(tenant_id: current_tenant.id)
-          membership.update!(role: role_param) if role_in_payload?
+          target_membership.update!(role: role_param) if role_in_payload?
         end
 
         render json: serialize_user(@user.reload)
@@ -52,6 +70,14 @@ module Api
 
       def destroy
         authorize! :destroy, @user
+        current_membership = current_user.memberships.find_by(tenant: current_tenant)
+        target_membership = @user.memberships.find_by!(tenant_id: current_tenant.id)
+
+        if target_membership.role == 'owner' && current_membership&.role != 'owner'
+          render json: { errors: ['Only owners can delete an owner user'] }, status: :forbidden
+          return
+        end
+
         membership = @user.memberships.find_by!(tenant_id: current_tenant.id)
         membership.destroy!
         @user.destroy! if @user.memberships.reload.none?

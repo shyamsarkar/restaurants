@@ -365,12 +365,7 @@ export const OrderPage = () => {
 
   return (
     <Box 
-      className="flex flex-col p-4 bg-slate-100"
-      style={{ 
-        height: 'calc(100vh - 40px)', 
-        maxHeight: 'calc(100vh - 40px)', 
-        overflow: 'hidden'
-      }}
+      className="flex flex-col h-full w-full min-h-0 min-w-0 p-3 md:p-4 bg-slate-100 rounded-xl shadow-sm border border-slate-200 overflow-hidden"
     >
       {/* Top action buttons */}
       <Box className="flex justify-between items-center mb-4">
@@ -514,10 +509,18 @@ export const OrderPage = () => {
           )}
         </Box>
       ) : (
-        <Grid container spacing={3} className="flex-1 overflow-hidden min-h-0" wrap="nowrap">
+        <Box className="flex-1 flex gap-4 overflow-hidden min-h-0 w-full">
           {/* Left Panel: Category Tabs & Product Grid */}
-          <Grid item xs={12} md={7} className="flex flex-col min-h-0 overflow-hidden" style={{ minWidth: 0 }}>
-            <Paper variant="outlined" className="p-3 mb-3 flex gap-2 overflow-x-auto shadow-sm flex-shrink-0">
+          <Box className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
+            <Paper
+              variant="outlined"
+              className="p-2.5 mb-3 flex gap-2 overflow-x-auto shadow-sm flex-shrink-0 w-full min-w-0 border-slate-200"
+              style={{
+                maxWidth: '100%',
+                whiteSpace: 'nowrap',
+                scrollbarWidth: 'thin'
+              }}
+            >
               <Chip
                 label="All Categories"
                 color={selectedCategory === null ? "primary" : "default"}
@@ -589,10 +592,10 @@ export const OrderPage = () => {
                 })}
               </Grid>
             </Box>
-          </Grid>
+          </Box>
 
           {/* Right Panel: Cart & Calculations */}
-          <Grid item xs={12} md={5} className="flex flex-col min-h-0 overflow-hidden" style={{ minWidth: 0 }}>
+          <Box className="w-[320px] md:w-[350px] lg:w-[380px] flex flex-col min-h-0 flex-shrink-0 overflow-hidden">
             <Paper variant="outlined" className="p-4 flex flex-col h-full bg-white shadow-md border-l-4 border-l-blue-600">
               <Box className="flex justify-between items-center mb-3">
                 <Typography variant="h6" className="font-bold text-slate-900 flex items-center gap-2">
@@ -774,8 +777,8 @@ export const OrderPage = () => {
                 </Button>
               </Box>
             </Paper>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       )}
 
 

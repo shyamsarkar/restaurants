@@ -18,6 +18,7 @@ import {
 import ProfileDropdown from './ProfileDropdown';
 import TenantSwitcher from './TenantSwitcher';
 import { useCommonStore } from '@/stores/common.store';
+import { useAuthStore } from '@/stores/auth.store';
 
 const basePath = '';
 
@@ -36,7 +37,24 @@ const Sidebar: React.FC = () => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const showSidebar = useCommonStore((state) => state.showSidebar);
   const { toggleSidebar } = useCommonStore();
+  const { user, tenantId, tenants } = useAuthStore();
   const navigate = useNavigate();
+
+  const currentTenant = tenants.find((t) => String(t.id) === String(tenantId));
+
+  const displayName = user
+    ? [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email
+    : 'System Operator';
+
+  const userInitials = user
+    ? (
+        (user.first_name?.[0] || '') + (user.last_name?.[0] || user.email?.[0] || 'U')
+      ).toUpperCase()
+    : 'MD';
+
+  const roleName = currentTenant?.role
+    ? currentTenant.role.charAt(0).toUpperCase() + currentTenant.role.slice(1)
+    : 'Member';
 
   const handleNavigate = () => {
     navigate('/');
@@ -108,12 +126,14 @@ const Sidebar: React.FC = () => {
             className={`flex items-center w-full p-2 rounded-lg hover:bg-slate-800 transition-colors duration-200 ${
               showSidebar ? 'space-x-3' : 'justify-center'
             }`}
+            title={`${displayName} (${roleName})`}
           >
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-amber-500 rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-xs font-bold">MD</span>
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-amber-500 rounded-full flex items-center justify-center flex-shrink-0 shadow">
+              <span className="text-white text-xs font-bold">{userInitials}</span>
             </div>
             <div className={`flex-1 text-left truncate ${showSidebar ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'} transition-all duration-200`}>
-              <div className="text-xs font-semibold text-slate-200">System Operator</div>
+              <div className="text-xs font-semibold text-slate-200 truncate">{displayName}</div>
+              <div className="text-[10px] font-medium text-amber-400 truncate">{roleName}</div>
             </div>
           </button>
 

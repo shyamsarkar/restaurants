@@ -8,6 +8,8 @@ import {
   User,
 } from "@/services/api.service";
 
+import { useAuthStore } from "@/stores/auth.store";
+
 type UserRole = "owner" | "admin" | "manager" | "cashier" | "waiter";
 
 const initialForm = {
@@ -29,6 +31,18 @@ const roleLabelMap: Record<UserRole, string> = {
 };
 
 const Users: React.FC = () => {
+  const { tenantId, tenants } = useAuthStore();
+  const currentTenantRole = useMemo(() => {
+    return tenants.find((t) => String(t.id) === String(tenantId))?.role || "waiter";
+  }, [tenantId, tenants]);
+
+  const availableRoles: UserRole[] = useMemo(() => {
+    if (currentTenantRole === "owner") {
+      return ["owner", "admin", "manager", "cashier", "waiter"];
+    }
+    return ["admin", "manager", "cashier", "waiter"];
+  }, [currentTenantRole]);
+
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -197,11 +211,11 @@ const Users: React.FC = () => {
               }
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="owner">Owner</option>
-              <option value="admin">Administrator</option>
-              <option value="manager">Manager</option>
-              <option value="cashier">Cashier</option>
-              <option value="waiter">Waiter</option>
+              {availableRoles.map((r) => (
+                <option key={r} value={r}>
+                  {roleLabelMap[r]}
+                </option>
+              ))}
             </select>
             <input
               type="password"
