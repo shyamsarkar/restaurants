@@ -11,9 +11,11 @@ import {
   Grid,
   CircularProgress,
 } from "@mui/material";
-import { Storefront } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
+import { Storefront, Group } from "@mui/icons-material";
 
 export const Settings = () => {
+  const navigate = useNavigate();
   const [info, setInfo] = useState<RestaurantInfo | null>(null);
   const [name, setName] = useState("");
   const [logo, setLogo] = useState("");
@@ -84,6 +86,19 @@ export const Settings = () => {
         <Typography variant="h4" className="font-bold text-slate-800 flex items-center gap-2">
           <Storefront className="text-3xl" /> Restaurant Profile Settings
         </Typography>
+        <Box className="flex gap-2">
+          <Button variant="contained" color="primary" startIcon={<Storefront />}>
+            Profile
+          </Button>
+          <Button
+            variant="outlined"
+            color="primary"
+            startIcon={<Group />}
+            onClick={() => navigate("/users")}
+          >
+            User Directory
+          </Button>
+        </Box>
       </Box>
 
       <Grid container spacing={3}>

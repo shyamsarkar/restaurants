@@ -12,6 +12,10 @@ class ApplicationController < ActionController::Base
     render json: { error: exception.message }, status: :forbidden
   end
 
+  rescue_from ActiveRecord::RecordNotFound do |exception|
+    render json: { error: 'Resource not found' }, status: :not_found
+  end
+
   protected
 
   # Optional: expose current ability explicitly (good practice)
@@ -33,7 +37,12 @@ class ApplicationController < ActionController::Base
 
     Current.membership = current_user.memberships
                                      .includes(:tenant)
-                                     .find_by!(tenant_id: tenant_id)
+                                     .find_by(tenant_id: tenant_id)
+
+    unless Current.membership
+      render json: { error: 'Access denied for selected tenant' }, status: :forbidden
+      return
+    end
 
     Current.tenant = Current.membership.tenant
 

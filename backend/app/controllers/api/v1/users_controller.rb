@@ -2,7 +2,7 @@ module Api
   module V1
     class UsersController < ApplicationController
       before_action :set_user, only: %i[show update destroy]
-      skip_before_action :set_current_context, only: [:update_password]
+      skip_before_action :set_current_context, only: [:update_password], raise: false
 
       def index
         authorize! :read, User
@@ -22,22 +22,48 @@ module Api
       def create
         authorize! :create, User
         role = role_param
-        current_membership = current_user.memberships.find_by(tenant: current_tenant)
 
-        if role == 'owner' && current_membership&.role != 'owner'
-          render json: { errors: ['Only owners can assign the owner role'] }, status: :forbidden
+        if role == 'owner'
+          render json: { errors: ['Creating owner users via User Directory is not allowed'] }, status: :forbidden
           return
         end
 
-        user = User.new(create_user_params)
-        user.must_change_password = true
+        email = create_user_params[:email]&.strip&.downcase
+        password = create_user_params[:password]
+        password_conf = create_user_params[:password_confirmation]
+
+        existing_user = User.find_by(email: email)
 
         ActiveRecord::Base.transaction do
-          user.save!
-          user.memberships.create!(tenant: current_tenant, role: role)
-        end
+          if existing_user
+            if Membership.exists?(user_id: existing_user.id, tenant_id: current_tenant.id)
+              render json: { errors: ['User with this email is already a member of this restaurant branch'] }, status: :unprocessable_content
+              return
+            end
 
-        render json: serialize_user(user), status: :created
+            Membership.create!(user_id: existing_user.id, tenant_id: current_tenant.id, role: role)
+            user = existing_user
+          else
+            if password.blank?
+              render json: { errors: ["Password can't be blank"] }, status: :unprocessable_content
+              return
+            end
+
+            user = User.new(
+              email: email,
+              first_name: create_user_params[:first_name],
+              last_name: create_user_params[:last_name],
+              is_active: create_user_params[:is_active] != false,
+              password: password,
+              password_confirmation: password_conf.presence || password
+            )
+            user.must_change_password = true
+            user.save!
+            Membership.create!(user_id: user.id, tenant_id: current_tenant.id, role: role)
+          end
+
+          render json: serialize_user(user), status: :created
+        end
       rescue ActiveRecord::RecordInvalid => e
         render json: { errors: e.record.errors.full_messages }, status: :unprocessable_content
       end
@@ -57,9 +83,14 @@ module Api
           return
         end
 
-        ActiveRecord::Base.transaction do
-          @user.update!(update_user_params)
+        params_hash = update_user_params
+        if params_hash[:password].blank?
+          params_hash.delete(:password)
+          params_hash.delete(:password_confirmation)
+        end
 
+        ActiveRecord::Base.transaction do
+          @user.update!(params_hash)
           target_membership.update!(role: role_param) if role_in_payload?
         end
 
@@ -70,6 +101,12 @@ module Api
 
       def destroy
         authorize! :destroy, @user
+
+        if @user.id == current_user.id
+          render json: { errors: ['You cannot delete your own account'] }, status: :forbidden
+          return
+        end
+
         current_membership = current_user.memberships.find_by(tenant: current_tenant)
         target_membership = @user.memberships.find_by!(tenant_id: current_tenant.id)
 
@@ -87,6 +124,40 @@ module Api
         render json: { errors: e.record.errors.full_messages }, status: :unprocessable_content
       end
 
+      # PATCH /api/v1/users/password
+      def update_password
+        user = current_user
+        
+        unless user.valid_password?(params[:current_password])
+          render json: { error: "Current password is incorrect" }, status: :unprocessable_entity
+          return
+        end
+
+        new_password = params[:new_password]
+        confirm_password = params[:confirm_password]
+
+        if new_password.blank?
+          render json: { error: "New password cannot be blank" }, status: :unprocessable_entity
+          return
+        end
+
+        if new_password != confirm_password
+          render json: { error: "New password and confirmation do not match" }, status: :unprocessable_entity
+          return
+        end
+
+        user.password = new_password
+        user.password_confirmation = confirm_password
+        user.must_change_password = false
+
+        if user.save
+          bypass_sign_in(user) if respond_to?(:bypass_sign_in)
+          render json: { message: "Password updated successfully" }, status: :ok
+        else
+          render json: { errors: user.errors.full_messages }, status: :unprocessable_entity
+        end
+      end
+
       private
 
       def set_user
@@ -98,7 +169,13 @@ module Api
       end
 
       def user_payload
-        params[:user].present? ? params.require(:user) : params
+        if params[:password].present? || params[:email].present?
+          params
+        elsif params[:user].is_a?(Hash) || params[:user].is_a?(ActionController::Parameters)
+          params[:user]
+        else
+          params
+        end
       end
 
       def create_user_params
@@ -160,39 +237,7 @@ module Api
         }
       end
 
-      # PATCH /api/v1/users/password
-      def update_password
-        user = current_user
-        
-        unless user.valid_password?(params[:current_password])
-          render json: { error: "Current password is incorrect" }, status: :unprocessable_entity
-          return
-        end
 
-        new_password = params[:new_password]
-        confirm_password = params[:confirm_password]
-
-        if new_password.blank?
-          render json: { error: "New password cannot be blank" }, status: :unprocessable_entity
-          return
-        end
-
-        if new_password != confirm_password
-          render json: { error: "New password and confirmation do not match" }, status: :unprocessable_entity
-          return
-        end
-
-        user.password = new_password
-        user.password_confirmation = confirm_password
-        user.must_change_password = false
-
-        if user.save
-          bypass_sign_in(user) if respond_to?(:bypass_sign_in)
-          render json: { message: "Password updated successfully" }, status: :ok
-        else
-          render json: { errors: user.errors.full_messages }, status: :unprocessable_entity
-        end
-      end
     end
   end
 end

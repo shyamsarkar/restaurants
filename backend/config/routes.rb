@@ -16,8 +16,8 @@ Rails.application.routes.draw do
         end
       end
       delete "/tenants/:id", to: "tenants#destroy"
-      resources :users, only: %i[index show create update destroy]
       patch "/users/password", to: "users#update_password"
+      resources :users, only: %i[index show create update destroy]
       resources :categories
       resources :products
       resources :customers

@@ -10,6 +10,8 @@ import {
 
 import { useAuthStore } from "@/stores/auth.store";
 
+import { useNavigate } from "react-router-dom";
+
 type UserRole = "owner" | "admin" | "manager" | "cashier" | "waiter";
 
 const initialForm = {
@@ -31,17 +33,15 @@ const roleLabelMap: Record<UserRole, string> = {
 };
 
 const Users: React.FC = () => {
-  const { tenantId, tenants } = useAuthStore();
+  const navigate = useNavigate();
+  const { tenantId, tenants, user: currentUser } = useAuthStore();
   const currentTenantRole = useMemo(() => {
     return tenants.find((t) => String(t.id) === String(tenantId))?.role || "waiter";
   }, [tenantId, tenants]);
 
   const availableRoles: UserRole[] = useMemo(() => {
-    if (currentTenantRole === "owner") {
-      return ["owner", "admin", "manager", "cashier", "waiter"];
-    }
     return ["admin", "manager", "cashier", "waiter"];
-  }, [currentTenantRole]);
+  }, []);
 
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
@@ -138,9 +138,13 @@ const Users: React.FC = () => {
 
       await fetchUsers();
       resetForm();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save user:", error);
-      setErrorMessage("Failed to save user.");
+      const serverMsg =
+        error.response?.data?.errors?.join(", ") ||
+        error.response?.data?.error ||
+        "Failed to save user. Please check your input.";
+      setErrorMessage(serverMsg);
     }
   };
 
@@ -164,17 +168,29 @@ const Users: React.FC = () => {
       await deleteUser(id);
       await fetchUsers();
       if (editingId === id) resetForm();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to delete user:", error);
-      setErrorMessage("Failed to delete user.");
+      const serverMsg =
+        error.response?.data?.errors?.join(", ") ||
+        error.response?.data?.error ||
+        "Failed to delete user.";
+      setErrorMessage(serverMsg);
     }
   };
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Users</h1>
-        <p className="text-gray-600">Manage your team members and their permissions.</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">User Directory & Staff</h1>
+          <p className="text-gray-600">Manage your team members and assign tenant permissions.</p>
+        </div>
+        <button
+          onClick={() => navigate("/settings")}
+          className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 font-medium transition-colors"
+        >
+          Restaurant Settings
+        </button>
       </div>
 
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
@@ -350,6 +366,7 @@ const Users: React.FC = () => {
                 filteredUsers.map((user) => {
                   const fullName =
                     [user.first_name, user.last_name].filter(Boolean).join(" ") || "-";
+                  const isSelf = currentUser && currentUser.id === user.id;
 
                   return (
                     <tr key={user.id} className="hover:bg-gray-50 transition-colors duration-200">
@@ -357,6 +374,11 @@ const Users: React.FC = () => {
                         <div>
                           <div className="font-medium text-gray-900 flex items-center gap-2">
                             {fullName}
+                            {isSelf && (
+                              <span className="inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded bg-blue-100 text-blue-800">
+                                You
+                              </span>
+                            )}
                             {user.must_change_password && (
                               <span className="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded bg-yellow-100 text-yellow-800">
                                 Password change pending
@@ -391,9 +413,14 @@ const Users: React.FC = () => {
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleDelete(user.id)}
-                            className="p-2 text-gray-400 hover:text-red-600 transition-colors duration-200"
-                            title="Delete user"
+                            onClick={() => !isSelf && handleDelete(user.id)}
+                            disabled={!!isSelf}
+                            className={`p-2 transition-colors duration-200 ${
+                              isSelf
+                                ? "text-gray-300 cursor-not-allowed"
+                                : "text-gray-400 hover:text-red-600"
+                            }`}
+                            title={isSelf ? "You cannot delete your own account" : "Delete user"}
                           >
                             <Delete className="w-4 h-4" />
                           </button>

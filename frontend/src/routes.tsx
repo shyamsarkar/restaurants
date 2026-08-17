@@ -16,6 +16,7 @@ import { MenuEditor } from '@/pages/Menu';
 import { Customers } from '@/pages/Customers';
 import { Reports } from '@/pages/Reports';
 import { Settings } from '@/pages/Settings';
+import Users from '@/pages/Users';
 import { ChangePassword } from '@/pages/ChangePassword';
 
 export const routes: RouteObject[] = [
@@ -47,6 +48,7 @@ export const routes: RouteObject[] = [
               { path: 'menu', element: <MenuEditor /> },
               { path: 'customers', element: <Customers /> },
               { path: 'reports', element: <Reports /> },
+              { path: 'users', element: <Users /> },
               { path: 'settings', element: <Settings /> },
             ],
           },

@@ -8,6 +8,7 @@ import {
   Kitchen as KitchenIcon, 
   MenuBook, 
   PeopleAlt, 
+  Group,
   BarChart, 
   Settings as SettingsIcon,
   ChevronLeft,
@@ -29,6 +30,7 @@ const menuItems = [
   { icon: KitchenIcon, label: 'Kitchen View', path: `${basePath}/kitchen` },
   { icon: MenuBook, label: 'Menu Editor', path: `${basePath}/menu` },
   { icon: PeopleAlt, label: 'Customers', path: `${basePath}/customers` },
+  { icon: Group, label: 'Users', path: `${basePath}/users` },
   { icon: BarChart, label: 'Reports', path: `${basePath}/reports` },
   { icon: SettingsIcon, label: 'Settings', path: `${basePath}/settings` },
 ];
@@ -61,11 +63,11 @@ const Sidebar: React.FC = () => {
   };
 
   return (
-    <div className={`fixed left-0 top-0 h-full bg-slate-900 text-slate-100 shadow-xl z-50 transition-all duration-300 ease-in-out ${
+    <div className={`fixed left-0 top-0 h-full flex flex-col bg-slate-900 text-slate-100 shadow-xl z-50 transition-all duration-300 ease-in-out ${
       showSidebar ? 'w-56' : 'w-16'
     }`}>
       {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b border-slate-800">
+      <div className="flex-shrink-0 flex items-center justify-between p-3 border-b border-slate-800">
         <div className={`flex items-center space-x-3 ${showSidebar ? 'opacity-100' : 'opacity-0'} transition-opacity duration-200 ${showSidebar ? '' : 'hidden'}`}>
           <h1 onClick={handleNavigate} className="cursor-pointer text-lg font-bold bg-gradient-to-r from-blue-400 to-amber-400 bg-clip-text text-transparent whitespace-nowrap">
             MealDesk
@@ -84,17 +86,19 @@ const Sidebar: React.FC = () => {
       </div>
 
       {/* Tenant Switcher */}
-      <TenantSwitcher />
+      <div className="flex-shrink-0">
+        <TenantSwitcher />
+      </div>
 
       {/* Navigation */}
-      <nav className="mt-4 px-2">
+      <nav className="flex-1 overflow-y-auto min-h-0 px-2 my-2">
         <ul className="space-y-1">
           {menuItems.map((item) => (
             <li key={item.path}>
               <NavLink
                 to={item.path}
                 className={({ isActive }) =>
-                  `flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 group relative ${
+                  `flex items-center px-3 py-2 rounded-lg transition-all duration-200 group relative ${
                     isActive
                       ? 'bg-blue-600/90 text-white font-medium shadow-md shadow-blue-900/30'
                       : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
@@ -119,7 +123,7 @@ const Sidebar: React.FC = () => {
       </nav>
 
       {/* Profile Section */}
-      <div className="absolute bottom-0 left-0 right-0 p-2 border-t border-slate-800">
+      <div className="flex-shrink-0 p-2 border-t border-slate-800 bg-slate-900 mt-auto">
         <div className="relative">
           <button
             onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
