@@ -37,7 +37,7 @@ export const TenantSwitcher: React.FC = () => {
     const targetTenant = ownerTenants.find((t) => String(t.id) === String(newTenantId));
     switchTenant(newTenantId);
     showToast(`Switched branch to ${targetTenant?.name || 'new branch'}`, 'success');
-    
+
     // Refresh current route via React Router navigation (remounts active route under new tenant header)
     navigate(0);
   };
@@ -59,15 +59,6 @@ export const TenantSwitcher: React.FC = () => {
 
   return (
     <div className="px-3 py-3 border-b border-slate-800">
-      <div className="flex items-center justify-between mb-1.5 px-0.5">
-        <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase flex items-center">
-          <Storefront className="w-3.5 h-3.5 mr-1 text-amber-400" />
-          Branch
-        </span>
-        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
-          Owner
-        </span>
-      </div>
       <div className="relative flex items-center">
         <select
           value={tenantId || ''}

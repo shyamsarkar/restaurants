@@ -15,7 +15,7 @@ class Ability
     when :admin
       can :manage, :all
       cannot [:create, :update, :destroy, :activate, :deactivate], Tenant
-      can :read, Tenant
+      can :read, Tenant, id: membership.tenant_id
     when :manager
       can :manage, Category
       can :manage, Product
@@ -25,7 +25,6 @@ class Ability
       can :manage, Kot
       can :manage, Customer
       can :manage, RestaurantInfo
-      can :read, User
       can :read, :report
       can :read, Tenant, id: membership.tenant_id
     when :cashier
@@ -38,7 +37,6 @@ class Ability
       can :manage, Kot
       can :manage, Customer
       can :read, RestaurantInfo
-      can :read, User
       can :read, Tenant, id: membership.tenant_id
     when :waiter
       can :read, Category
@@ -52,7 +50,6 @@ class Ability
       can :manage, OrderItem
       can :manage, Kot
       can :manage, Customer
-      can :read, User
       can :read, Tenant, id: membership.tenant_id
     end
   end

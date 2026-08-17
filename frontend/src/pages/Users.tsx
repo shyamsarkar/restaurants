@@ -39,6 +39,12 @@ const Users: React.FC = () => {
     return tenants.find((t) => String(t.id) === String(tenantId))?.role || "waiter";
   }, [tenantId, tenants]);
 
+  useEffect(() => {
+    if (currentTenantRole !== "owner" && currentTenantRole !== "admin") {
+      navigate("/");
+    }
+  }, [currentTenantRole, navigate]);
+
   const availableRoles: UserRole[] = useMemo(() => {
     return ["admin", "manager", "cashier", "waiter"];
   }, []);

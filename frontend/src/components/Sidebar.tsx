@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 
 import { 
@@ -62,6 +62,18 @@ const Sidebar: React.FC = () => {
     navigate('/');
   };
 
+  const filteredMenuItems = useMemo(() => {
+    const role = currentTenant?.role;
+    const canAccessUsers = role === 'owner' || role === 'admin';
+
+    return menuItems.filter((item) => {
+      if (item.path.endsWith('/users') && !canAccessUsers) {
+        return false;
+      }
+      return true;
+    });
+  }, [currentTenant?.role]);
+
   return (
     <div className={`fixed left-0 top-0 h-full flex flex-col bg-slate-900 text-slate-100 shadow-xl z-50 transition-all duration-300 ease-in-out ${
       showSidebar ? 'w-56' : 'w-16'
@@ -93,7 +105,7 @@ const Sidebar: React.FC = () => {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto min-h-0 px-2 my-2">
         <ul className="space-y-1">
-          {menuItems.map((item) => (
+          {filteredMenuItems.map((item) => (
             <li key={item.path}>
               <NavLink
                 to={item.path}
